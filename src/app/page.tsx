@@ -1,65 +1,126 @@
-import Image from "next/image";
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import Nav from '@/components/Nav'
+import MatchCard from '@/components/MatchCard'
+import { adminDb, type Match } from '@/lib/db'
+import { getSession } from '@/lib/session'
+import { ROUND_LABEL, type Scoring } from '@/lib/scoring'
+import { formatKickoff } from '@/lib/teams'
+import { syncResults } from '@/lib/sync'
 
-export default function Home() {
+export const dynamic = 'force-dynamic'
+
+const ROUND_CHIP: Record<number, string> = {
+  1: 'Fecha 1', 2: 'Fecha 2', 3: 'Fecha 3', 4: '16avos',
+  5: 'Octavos', 6: 'Cuartos', 7: 'Semis', 8: 'Final',
+}
+
+export default async function FixturePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ronda?: string }>
+}) {
+  const session = await getSession()
+  if (!session) redirect('/login')
+
+  // Actualización perezosa: sincroniza resultados si han pasado >5 min.
+  await syncResults().catch(() => {})
+
+  const db = adminDb()
+  const [{ data: matches }, { data: preds }, { data: cfg }] = await Promise.all([
+    db.from('matches').select('*').order('kickoff_utc').order('id'),
+    db.from('predictions').select('*').eq('participant_id', session.id),
+    db.from('settings').select('value').eq('key', 'scoring').single(),
+  ])
+  const all = (matches ?? []) as Match[]
+  const myPreds = new Map((preds ?? []).map((p) => [p.match_id, p]))
+  const scoring = cfg?.value as Scoring
+
+  const { ronda } = await searchParams
+  const currentRound = all.find((m) => m.status !== 'finished')?.round ?? 8
+  const round = Math.min(8, Math.max(1, Number(ronda) || currentRound))
+  const shown = all.filter((m) => m.round === round)
+  const now = Date.now()
+
+  // Agrupar por día (hora de Colombia)
+  const dayFmt = new Intl.DateTimeFormat('es-CO', {
+    weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Bogota',
+  })
+  const byDay = new Map<string, Match[]>()
+  for (const m of shown) {
+    const day = dayFmt.format(new Date(m.kickoff_utc))
+    byDay.set(day, [...(byDay.get(day) ?? []), m])
+  }
+
+  const mult = scoring?.multipliers?.[String(round)] ?? 1
+  const exactPts = (scoring?.exact ?? 5) * mult
+  const outcomePts = (scoring?.outcome ?? 2) * mult
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="flex-1">
+      <Nav session={session} active="fixture" />
+      <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {Object.entries(ROUND_CHIP).map(([r, label]) => (
+            <Link
+              key={r}
+              href={`/?ronda=${r}`}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition ${
+                Number(r) === round ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-600'
+              }`}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        <div>
+          <h1 className="text-lg font-bold">{ROUND_LABEL[round]}</h1>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Marcador exacto <span className="text-emerald-400 font-semibold">{exactPts} pts</span> · Solo
+            resultado <span className="text-emerald-400 font-semibold">{outcomePts} pts</span>
+            {round === 8 && scoring && (
+              <> · La final vale exacto {scoring.exact * scoring.final_multiplier} / resultado {scoring.outcome * scoring.final_multiplier}</>
+            )}
+            {' '}· Se bloquea al inicio de cada partido (se compara el marcador final, sin penales).
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        {[...byDay.entries()].map(([day, ms]) => (
+          <section key={day}>
+            <h2 className="text-sm font-semibold text-emerald-400/90 capitalize mb-2">{day}</h2>
+            <div className="space-y-2">
+              {ms.map((m) => {
+                const pred = myPreds.get(m.id)
+                return (
+                  <div key={m.id} className="relative">
+                    {m.group_name && (
+                      <span className="absolute -top-1.5 right-2 text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded z-[1]">
+                        Grupo {m.group_name}
+                      </span>
+                    )}
+                    <MatchCard
+                      matchId={m.id}
+                      home={m.home_team}
+                      away={m.away_team}
+                      kickoffLabel={formatKickoff(m.kickoff_utc)}
+                      venue={m.venue}
+                      locked={new Date(m.kickoff_utc).getTime() <= now}
+                      status={m.status}
+                      actualHome={m.home_score}
+                      actualAway={m.away_score}
+                      initialHome={pred?.home_score ?? null}
+                      initialAway={pred?.away_score ?? null}
+                      points={pred?.points ?? null}
+                      maxExact={exactPts}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        ))}
       </main>
     </div>
-  );
+  )
 }

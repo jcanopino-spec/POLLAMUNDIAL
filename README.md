@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏆 Polla Mundial 2026
 
-## Getting Started
+Simulador/polla del Mundial de Fútbol 2026 (Canadá · México · Estados Unidos) para hasta **25 participantes**.
 
-First, run the development server:
+## Cómo funciona
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Pronósticos por partido**: cada participante ingresa el marcador de los 104 partidos. El ingreso se **bloquea automáticamente al inicio de cada partido** (validación server-side).
+- **Puntaje** (configurable en `settings.scoring` de Supabase):
+  | Fase | Marcador exacto | Solo resultado (1X2) |
+  |---|---|---|
+  | Fase de grupos | 5 | 2 |
+  | Dieciseisavos | 10 | 4 |
+  | Octavos | 15 | 6 |
+  | Cuartos | 20 | 8 |
+  | Semis y 3er puesto | 25 | 10 |
+  | Final | 30 | 12 |
+  - Bono **campeón**: 30 pts (se elige antes del partido inaugural).
+  - Regla de la casa: se compara el **marcador final (incluida prórroga, sin penales)**.
+- **Actualización automática**: los resultados se sincronizan desde [fixturedownload.com](https://fixturedownload.com/results/fifa-world-cup-2026) cada vez que alguien abre la app (máx. cada 5 min) + cron diario de respaldo + botón "Sincronizar ahora" del admin. Los equipos de eliminatorias se actualizan solos al cerrarse los grupos.
+- **Acceso**: nombre + PIN de 4 dígitos (el admin crea los participantes en `/admin`).
+- Horarios mostrados en **hora de Colombia**.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Crea un proyecto en [supabase.com](https://supabase.com) y ejecuta `supabase/schema.sql` en el SQL Editor.
+2. Copia `.env.local.example` a `.env.local` y completa `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SESSION_SECRET` (`openssl rand -base64 32`) y `CRON_SECRET`.
+3. Siembra los 104 partidos: `node scripts/seed.mjs`
+4. Crea el primer admin (genera el hash con `npx tsx -e "import b from 'bcryptjs'; console.log(b.hashSync('TU_PIN', 10))"`):
+   ```sql
+   insert into participants (name, pin_hash, is_admin) values ('Jaime', '<hash>', true);
+   ```
+5. `npm run dev` para local, o despliega en Vercel configurando las mismas variables de entorno.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+> **Nota Vercel Hobby**: el cron incluido corre 1 vez/día (límite del plan). La sincronización principal es la perezosa al abrir la app, que es suficiente. Si quieres latencia mínima sin visitas, apunta un cron externo gratuito (cron-job.org) a `GET /api/cron/sync` con header `Authorization: Bearer <CRON_SECRET>` cada 10 min.
 
-## Learn More
+## Stack
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Next.js 16 (App Router, server actions) · Supabase (Postgres, acceso solo server-side con service role) · Tailwind 4 · Vercel.
