@@ -8,6 +8,7 @@ import { ROUND_LABEL, type Scoring } from '@/lib/scoring'
 import { formatKickoff, teamFlag, teamShort } from '@/lib/teams'
 import { syncResults } from '@/lib/sync'
 import { Countdown } from '@/components/Fiesta'
+import WelcomeSplash from '@/components/WelcomeSplash'
 import {
   dayChipLabel, dayKey, dayLongLabel, dayMonthLabel, FIFA_URL, groupByDay, tvColombia, weekOf,
 } from '@/lib/calendar'
@@ -22,7 +23,7 @@ const ROUND_CHIP: Record<number, string> = {
 export default async function FixturePage({
   searchParams,
 }: {
-  searchParams: Promise<{ vista?: string; dia?: string; semana?: string; ronda?: string; grupo?: string }>
+  searchParams: Promise<{ vista?: string; dia?: string; semana?: string; ronda?: string; grupo?: string; hola?: string }>
 }) {
   const session = await getSession()
   if (!session) redirect('/login')
@@ -35,7 +36,7 @@ export default async function FixturePage({
     db.from('matches').select('*').order('kickoff_utc').order('id'),
     db.from('predictions').select('*').eq('participant_id', session.id),
     db.from('settings').select('value').eq('key', 'scoring').single(),
-    db.from('participants').select('must_change_pin, champion_team, finalist1, finalist2').eq('id', session.id).single(),
+    db.from('participants').select('must_change_pin, champion_team, finalist1, finalist2, nickname').eq('id', session.id).single(),
   ])
   const all = (matches ?? []) as Match[]
   const opener = all.find((m) => m.id === 1)
@@ -117,6 +118,7 @@ export default async function FixturePage({
 
   return (
     <div className="shell">
+      {params.hola === '1' && <WelcomeSplash apodo={me?.nickname || session.name} />}
       <div className="shell-content fade">
         <div className="appbar">
           <div>

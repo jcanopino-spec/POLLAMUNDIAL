@@ -25,10 +25,10 @@ export default function WelcomeWizard(p: Props) {
     if (step === 'reglas') {
       if (!pinDone) setStep('pin')
       else if (needsPicks) setStep('picks')
-      else router.push('/')
+      else router.push('/?hola=1')
     } else if (step === 'pin') {
       if (needsPicks) setStep('picks')
-      else router.push('/')
+      else router.push('/?hola=1')
     }
   }
 
@@ -98,7 +98,7 @@ export default function WelcomeWizard(p: Props) {
             locked={p.picksLocked}
             finalistBonus={p.scoring.finalist_bonus}
             championBonus={p.scoring.champion_bonus}
-            onSaved={() => setTimeout(() => router.push('/'), 1200)}
+            onSaved={() => setTimeout(() => router.push('/?hola=1'), 1200)}
           />
         </div>
       )}
