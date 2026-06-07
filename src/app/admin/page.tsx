@@ -24,10 +24,15 @@ export default async function AdminPage() {
     : null
 
   return (
-    <div className="flex-1">
-      <Nav session={session} active="admin" />
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-        <h1 className="text-lg font-bold">Administración</h1>
+    <div className="shell">
+      <div className="shell-content fade">
+        <div className="appbar">
+          <div>
+            <div className="kicker">🛠️ El que manda</div>
+            <h2 className="display">Admin</h2>
+          </div>
+          <span className="pill" style={{ background: 'var(--yellow)' }}>🐔 jefe</span>
+        </div>
         <ParticipantsAdmin participants={participants ?? []} myId={session.id} />
         <ResultsAdmin
           matches={(matches ?? []).map((m) => ({
@@ -39,7 +44,9 @@ export default async function AdminPage() {
           }))}
         />
         <SyncAdmin lastSync={lastSync} />
-      </main>
+        <div className="spacer" />
+      </div>
+      <Nav session={session} active="admin" />
     </div>
   )
 }

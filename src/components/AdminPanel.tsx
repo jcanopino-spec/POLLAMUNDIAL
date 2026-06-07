@@ -9,7 +9,8 @@ import {
   setManualResult,
   updateParticipantInfo,
 } from '@/app/admin/actions'
-import { teamLabel } from '@/lib/teams'
+import { teamFlag, teamShort } from '@/lib/teams'
+import { avatarFor } from '@/lib/avatar'
 
 type ParticipantRow = {
   id: string
@@ -21,8 +22,10 @@ type ParticipantRow = {
 }
 type MatchOption = { id: number; home_team: string; away_team: string; kickoffLabel: string; status: string }
 
-const inputCls =
-  'rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500'
+const miniBtn: React.CSSProperties = {
+  border: '2px solid var(--ink)', borderRadius: 9, padding: '4px 8px',
+  fontSize: 11, fontWeight: 800, background: 'var(--cream)', cursor: 'pointer',
+}
 
 export function ParticipantsAdmin({ participants, myId }: { participants: ParticipantRow[]; myId: string }) {
   const [state, action, pending] = useActionState(createParticipant, null)
@@ -30,40 +33,42 @@ export function ParticipantsAdmin({ participants, myId }: { participants: Partic
   const [feedback, setFeedback] = useState('')
 
   return (
-    <section className="rounded-xl border border-slate-800 p-4">
-      <h2 className="font-semibold mb-1">Participantes ({participants.length}/100)</h2>
-      <p className="text-xs text-slate-500 mb-3">
-        Todos arrancan con el PIN genérico <strong className="text-emerald-400">2026</strong>; al entrar por
-        primera vez la app los obliga a cambiarlo y a elegir sus finalistas y campeón. La casa alimenta la
-        <strong> guerra de casas 🏠</strong> en Posiciones.
+    <section className="card mx-[18px] mb-4">
+      <p className="display text-lg uppercase">Vecinos ({participants.length}/100)</p>
+      <p className="text-xs font-bold mb-3" style={{ color: 'var(--muted)' }}>
+        Todos arrancan con PIN <b style={{ color: 'var(--green)' }}>2026</b> y lo cambian al entrar. La casa alimenta la guerra de casas 🏠.
       </p>
 
-      <form action={action} className="flex flex-wrap gap-2 mb-4">
-        <input name="name" placeholder="Nombre" required className={`${inputCls} flex-1 min-w-32`} />
-        <input name="house" placeholder="Casa #" required className={`${inputCls} w-20 text-center`} />
-        <input name="nickname" placeholder="Apodo (opcional)" className={`${inputCls} flex-1 min-w-28`} />
-        <label className="flex items-center gap-1.5 text-xs text-slate-400">
-          <input type="checkbox" name="is_admin" className="accent-emerald-600" /> admin
-        </label>
-        <button disabled={pending} className="rounded-lg bg-gradient-to-r from-emerald-600 to-sky-600 hover:from-emerald-500 hover:to-sky-500 disabled:opacity-50 px-4 py-2 text-sm font-semibold">
-          {pending ? 'Creando…' : 'Crear (PIN 2026)'}
+      <form action={action} className="space-y-2 mb-4">
+        <input name="name" placeholder="Nombre" required className="input" />
+        <div className="flex gap-2">
+          <input name="house" placeholder="Casa #" required className="input" style={{ width: 90 }} />
+          <input name="nickname" placeholder="Apodo (opcional)" className="input flex-1" />
+          <label className="flex items-center gap-1 text-[11px] font-extrabold shrink-0" style={{ color: 'var(--muted)' }}>
+            <input type="checkbox" name="is_admin" /> admin
+          </label>
+        </div>
+        <button disabled={pending} className="savebtn">
+          {pending ? 'CREANDO…' : 'CREAR VECINO · PIN 2026'}
         </button>
       </form>
-      {state && 'error' in state && state.error && <p className="text-red-400 text-xs mb-3">{state.error}</p>}
-      {state && 'ok' in state && state.ok && <p className="text-emerald-400 text-xs mb-3">{state.ok}</p>}
-      {feedback && <p className="text-amber-400 text-xs mb-3">{feedback}</p>}
+      {state && 'error' in state && state.error && <p className="text-xs font-bold mb-2" style={{ color: 'var(--red-d)' }}>{state.error}</p>}
+      {state && 'ok' in state && state.ok && <p className="text-xs font-bold mb-2" style={{ color: 'var(--green)' }}>{state.ok}</p>}
+      {feedback && <p className="text-xs font-bold mb-2" style={{ color: 'var(--blue)' }}>{feedback}</p>}
 
-      <ul className="divide-y divide-slate-800/70 text-sm">
+      <ul className="divide-y" style={{ borderColor: 'var(--cream-2)' }}>
         {participants.map((p) => (
           <li key={p.id} className="py-2 flex items-center gap-2">
-            <span className="flex-1">
+            <div className="av" style={{ width: 32, height: 32, fontSize: 18 }}>{avatarFor(p.nickname || p.name)}</div>
+            <span className="flex-1 text-sm font-extrabold min-w-0 truncate">
               {p.name}
-              {p.nickname && <span className="text-slate-400 italic"> “{p.nickname}”</span>}
-              {p.house_number && <span className="text-xs text-sky-400 ml-2">🏠 {p.house_number}</span>}
-              {p.is_admin && <span className="text-[10px] bg-emerald-900 text-emerald-300 rounded px-1.5 py-0.5 ml-2">ADMIN</span>}
+              {p.nickname && <span className="font-bold italic" style={{ color: 'var(--muted)' }}> “{p.nickname}”</span>}
+              {p.house_number && <span className="text-[11px]" style={{ color: 'var(--blue)' }}> 🏠{p.house_number}</span>}
+              {p.is_admin && <span className="text-[9px] ml-1 px-1.5 py-0.5 rounded-full" style={{ background: 'var(--green)', color: '#fff' }}>ADMIN</span>}
             </span>
             <button
               disabled={busy}
+              style={miniBtn}
               onClick={() => {
                 const house = prompt(`Casa de ${p.name}:`, p.house_number ?? '')
                 if (house == null) return
@@ -73,26 +78,26 @@ export function ParticipantsAdmin({ participants, myId }: { participants: Partic
                   setFeedback(r?.error ?? `${p.name} actualizado.`)
                 })
               }}
-              className="text-xs text-slate-400 hover:text-white border border-slate-700 rounded px-2 py-1"
             >
               ✏️
             </button>
             <button
               disabled={busy}
+              style={miniBtn}
               onClick={() => {
-                if (!confirm(`¿Restablecer el PIN de ${p.name} a 2026? Tendrá que cambiarlo al entrar.`)) return
+                if (!confirm(`¿Restablecer el PIN de ${p.name} a 2026?`)) return
                 startTransition(async () => {
                   const r = await resetPin(p.id)
                   setFeedback(r?.error ?? `PIN de ${p.name} → 2026.`)
                 })
               }}
-              className="text-xs text-slate-400 hover:text-white border border-slate-700 rounded px-2 py-1"
             >
-              PIN→2026
+              PIN
             </button>
             {p.id !== myId && (
               <button
                 disabled={busy}
+                style={{ ...miniBtn, color: 'var(--red-d)' }}
                 onClick={() => {
                   if (!confirm(`¿Eliminar a ${p.name} y todos sus pronósticos?`)) return
                   startTransition(async () => {
@@ -100,9 +105,8 @@ export function ParticipantsAdmin({ participants, myId }: { participants: Partic
                     setFeedback(r?.error ?? `${p.name} eliminado.`)
                   })
                 }}
-                className="text-xs text-red-400/80 hover:text-red-300 border border-slate-700 rounded px-2 py-1"
               >
-                Eliminar
+                🗑️
               </button>
             )}
           </li>
@@ -116,32 +120,30 @@ export function ResultsAdmin({ matches }: { matches: MatchOption[] }) {
   const [state, action, pending] = useActionState(setManualResult, null)
 
   return (
-    <section className="rounded-xl border border-slate-800 p-4">
-      <h2 className="font-semibold mb-1">Resultado manual</h2>
-      <p className="text-xs text-slate-500 mb-3">
-        Úsalo si el feed se demora. En eliminatorias con penales, marca el ganador.
+    <section className="card mx-[18px] mb-4">
+      <p className="display text-lg uppercase">Resultado manual</p>
+      <p className="text-xs font-bold mb-3" style={{ color: 'var(--muted)' }}>
+        Úsalo si el feed se demora. En eliminatorias con penales, escribe el ganador.
       </p>
       <form action={action} className="space-y-2">
-        <select name="match_id" required className={`${inputCls} w-full`}>
+        <select name="match_id" required className="input">
           <option value="">— Elige el partido —</option>
           {matches.map((m) => (
             <option key={m.id} value={m.id}>
-              P{m.id} · {teamLabel(m.home_team)} vs {teamLabel(m.away_team)} · {m.kickoffLabel}
+              P{m.id} · {teamShort(m.home_team)} vs {teamShort(m.away_team)} · {m.kickoffLabel}
               {m.status === 'finished' ? ' ✓' : ''}
             </option>
           ))}
         </select>
         <div className="flex gap-2">
-          <input name="home_score" type="number" min={0} max={99} placeholder="Local" required className={`${inputCls} w-24`} />
-          <input name="away_score" type="number" min={0} max={99} placeholder="Visita" required className={`${inputCls} w-24`} />
-          <button disabled={pending} className="rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-4 py-2 text-sm font-semibold">
-            {pending ? 'Guardando…' : 'Guardar resultado'}
-          </button>
+          <input name="home_score" type="number" min={0} max={99} placeholder="Local" required className="input" />
+          <input name="away_score" type="number" min={0} max={99} placeholder="Visita" required className="input" />
         </div>
-        <input name="winner" placeholder="Ganador si hubo penales (nombre del equipo en inglés, ej. Colombia)" className={`${inputCls} w-full`} />
+        <input name="winner" placeholder="Ganador si hubo penales (en inglés, ej. Colombia)" className="input" />
+        <button disabled={pending} className="savebtn">{pending ? 'GUARDANDO…' : 'GUARDAR RESULTADO'}</button>
       </form>
-      {state && 'error' in state && state.error && <p className="text-red-400 text-xs mt-2">{state.error}</p>}
-      {state && 'ok' in state && state.ok && <p className="text-emerald-400 text-xs mt-2">{state.ok}</p>}
+      {state && 'error' in state && state.error && <p className="text-xs font-bold mt-2" style={{ color: 'var(--red-d)' }}>{state.error}</p>}
+      {state && 'ok' in state && state.ok && <p className="text-xs font-bold mt-2" style={{ color: 'var(--green)' }}>{state.ok}</p>}
     </section>
   )
 }
@@ -151,25 +153,25 @@ export function SyncAdmin({ lastSync }: { lastSync: string | null }) {
   const [busy, startTransition] = useTransition()
 
   return (
-    <section className="rounded-xl border border-slate-800 p-4">
-      <h2 className="font-semibold mb-1">Sincronización de resultados</h2>
-      <p className="text-xs text-slate-500 mb-3">
-        Automática: cada vez que alguien abre la app (máx. cada 5 min) y con el cron diario de respaldo.
-        Última: <span className="text-slate-300">{lastSync ?? 'nunca'}</span>
+    <section className="card mx-[18px] mb-4">
+      <p className="display text-lg uppercase">Sincronización</p>
+      <p className="text-xs font-bold mb-3" style={{ color: 'var(--muted)' }}>
+        Automática al abrir la app (máx. c/5 min) + cron diario. Última: <b style={{ color: 'var(--ink)' }}>{lastSync ?? 'nunca'}</b>
       </p>
       <button
         disabled={busy}
+        className="savebtn"
+        style={{ background: 'var(--blue)' }}
         onClick={() =>
           startTransition(async () => {
             const r = await forceSyncNow()
             setMsg(('error' in r && r.error) || ('ok' in r && r.ok) || '')
           })
         }
-        className="rounded-lg bg-sky-700 hover:bg-sky-600 disabled:opacity-50 px-4 py-2 text-sm font-semibold"
       >
-        {busy ? 'Sincronizando…' : '↻ Sincronizar ahora'}
+        {busy ? 'SINCRONIZANDO…' : '↻ SINCRONIZAR AHORA'}
       </button>
-      {msg && <p className="text-xs mt-2 text-slate-300">{msg}</p>}
+      {msg && <p className="text-xs font-bold mt-2" style={{ color: 'var(--ink)' }}>{msg}</p>}
     </section>
   )
 }

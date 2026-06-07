@@ -81,6 +81,26 @@ export function isPlaceholder(name: string): boolean {
   return !(name in TEAMS)
 }
 
+export function teamFlag(name: string): string {
+  return TEAMS[name]?.flag ?? '❔'
+}
+
+// Nombre corto para las tarjetas (estilo del diseño)
+const SHORT: Record<string, string> = {
+  'Estados Unidos': 'EE.UU.',
+  'Países Bajos': 'Países B.',
+  'Bosnia y Herzegovina': 'Bosnia',
+  'Corea del Sur': 'Corea S.',
+  'Nueva Zelanda': 'N. Zelanda',
+  'Costa de Marfil': 'C. Marfil',
+  'Arabia Saudita': 'Arabia S.',
+}
+export function teamShort(name: string): string {
+  const es = TEAMS[name]?.es
+  if (es) return SHORT[es] ?? es
+  return teamEs(name)
+}
+
 // Hora de Colombia para mostrar fechas
 export function formatKickoff(utc: string): string {
   return new Intl.DateTimeFormat('es-CO', {

@@ -5,7 +5,7 @@ import MatchCard from '@/components/MatchCard'
 import { adminDb, type Match } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { ROUND_LABEL, type Scoring } from '@/lib/scoring'
-import { formatKickoff, teamLabel } from '@/lib/teams'
+import { formatKickoff, teamFlag, teamShort } from '@/lib/teams'
 import { syncResults } from '@/lib/sync'
 import { Countdown } from '@/components/Fiesta'
 import {
@@ -54,7 +54,6 @@ export default async function FixturePage({
   const allDays = groupByDay(all)
   const firstDay = allDays[0]?.key ?? '2026-06-11'
   const today = dayKey(new Date())
-  // Día por defecto: hoy si hay partidos; si no, el próximo día con partidos; si terminó, el último.
   const defaultDay =
     allDays.find((d) => d.key === today)?.key ??
     allDays.find((d) => d.key > today)?.key ??
@@ -73,21 +72,20 @@ export default async function FixturePage({
     const round = Math.min(8, Math.max(1, Number(params.ronda) || currentRound))
     shownDays = groupByDay(all.filter((m) => m.round === round))
     title = ROUND_LABEL[round]
-    const mult = round === 8 ? scoring.multipliers['8'] : (scoring?.multipliers?.[String(round)] ?? 1)
-    subtitle = `Exacto ${scoring.exact * mult} pts · Solo resultado ${scoring.outcome * mult} pts${round === 8 ? ` · La final vale ${scoring.exact * scoring.final_multiplier}/${scoring.outcome * scoring.final_multiplier}` : ''}`
+    const mult = scoring?.multipliers?.[String(round)] ?? 1
+    subtitle = `Exacto ${scoring.exact * mult} pts · resultado ${scoring.outcome * mult} pts${round === 8 ? ` · la final va ${scoring.exact * scoring.final_multiplier}/${scoring.outcome * scoring.final_multiplier}` : ''}`
   } else if (vista === 'grupo') {
-    // Grupo K por defecto: ahí juega la Tricolor 🇨🇴
     const grupo = GROUPS.includes(params.grupo ?? '') ? params.grupo! : 'K'
     const ms = all.filter((m) => m.group_name === grupo)
     shownDays = groupByDay(ms)
     const teams = [...new Set(ms.flatMap((m) => [m.home_team, m.away_team]))]
     title = `Grupo ${grupo}`
-    subtitle = teams.map((t) => teamLabel(t)).join(' · ')
+    subtitle = teams.map((t) => `${teamFlag(t)} ${teamShort(t)}`).join(' · ')
   } else if (vista === 'semana') {
     const totalWeeks = weekOf(allDays[allDays.length - 1].key, firstDay)
     const currentWeek = Math.min(totalWeeks, Math.max(1, Number(params.semana) || weekOf(defaultDay ?? firstDay, firstDay)))
     shownDays = allDays.filter((d) => weekOf(d.key, firstDay) === currentWeek)
-    title = `Semana ${currentWeek} del Mundial`
+    title = `Semana ${currentWeek}`
     subtitle = `${shownDays.reduce((s, d) => s + d.matches.length, 0)} partidos · del ${dayChipLabel(shownDays[0]?.key ?? firstDay)} al ${dayChipLabel(shownDays[shownDays.length - 1]?.key ?? firstDay)}`
   } else {
     const dia = allDays.find((d) => d.key === params.dia)?.key ?? defaultDay
@@ -96,30 +94,18 @@ export default async function FixturePage({
     subtitle = `${shownDays[0]?.matches.length ?? 0} partido(s) este día`
   }
 
-  // Pendientes por día para los chips (partidos sin iniciar y sin pronóstico)
   const pendingByDay = new Map<string, number>()
+  let totalPending = 0
   for (const d of allDays) {
-    pendingByDay.set(
-      d.key,
-      d.matches.filter((m) => new Date(m.kickoff_utc).getTime() > now && !myPreds.has(m.id)).length
-    )
+    const n = d.matches.filter((m) => new Date(m.kickoff_utc).getTime() > now && !myPreds.has(m.id)).length
+    pendingByDay.set(d.key, n)
+    totalPending += n
   }
   const totalWeeks = weekOf(allDays[allDays.length - 1].key, firstDay)
-  const activeWeek = vista === 'semana' ? Number(params.semana) || weekOf(defaultDay ?? firstDay, firstDay) : null
+  const activeWeek = vista === 'semana' ? Math.min(totalWeeks, Math.max(1, Number(params.semana) || weekOf(defaultDay ?? firstDay, firstDay))) : null
   const activeDay = vista === 'dia' ? (allDays.find((d) => d.key === params.dia)?.key ?? defaultDay) : null
   const activeRound = vista === 'fase' ? Math.min(8, Math.max(1, Number(params.ronda) || (all.find((m) => m.status !== 'finished')?.round ?? 8))) : null
-
-  const modeChip = (key: string, label: string) => (
-    <Link
-      key={key}
-      href={`/?vista=${key}`}
-      className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
-        vista === key ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-600'
-      }`}
-    >
-      {label}
-    </Link>
-  )
+  const activeGroup = vista === 'grupo' ? (GROUPS.includes(params.grupo ?? '') ? params.grupo! : 'K') : null
 
   // Héroe: próximo partido (prioridad a la Tricolor si juega hoy)
   const nextMatch = all.find((m) => new Date(m.kickoff_utc).getTime() > now)
@@ -127,75 +113,65 @@ export default async function FixturePage({
   const colombiaToday = all.find(
     (m) => dayKey(m.kickoff_utc) === today && (m.home_team === 'Colombia' || m.away_team === 'Colombia')
   )
+  const heroMatch = colombiaToday ?? nextMatch
 
   return (
-    <div className="flex-1">
-      <Nav session={session} active="fixture" />
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-5">
-        {/* Héroe de la fiesta */}
-        <div className="rounded-2xl bg-gradient-to-r from-rose-900/50 via-emerald-900/50 to-sky-900/50 border border-emerald-700/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="text-center sm:text-left">
-            <p className="font-extrabold text-lg">
-              <span className="ball-bounce mr-1.5">⚽</span>
-              {colombiaToday
-                ? '¡HOY juega la Tricolor! 🇨🇴🎉'
-                : liveCount > 0
-                  ? `● ${liveCount} partido(s) EN JUEGO ahora mismo`
-                  : nextMatch
-                    ? `Próximo: ${teamLabel(nextMatch.home_team)} vs ${teamLabel(nextMatch.away_team)}`
-                    : '¡Se acabó la fiesta… hasta 2030! 🥲'}
-            </p>
-            {nextMatch && !colombiaToday && liveCount === 0 && (
-              <p className="text-xs text-slate-300 mt-0.5">{formatKickoff(nextMatch.kickoff_utc)} (Col) · {nextMatch.venue}</p>
-            )}
-            {colombiaToday && (
-              <p className="text-xs text-slate-300 mt-0.5">
-                {teamLabel(colombiaToday.home_team)} vs {teamLabel(colombiaToday.away_team)} · {formatKickoff(colombiaToday.kickoff_utc)} (Col) 📺 Caracol · RCN
-              </p>
-            )}
+    <div className="shell">
+      <div className="shell-content fade">
+        <div className="appbar">
+          <div>
+            <div className="kicker">🎯 Tus apuestas{liveCount > 0 && <span style={{ color: 'var(--red)' }}> · {liveCount} en juego</span>}</div>
+            <h2 className="display">Pronosticar</h2>
           </div>
-          {nextMatch && (
-            <Countdown
-              targetIso={new Date(nextMatch.kickoff_utc).toISOString()}
-              label={tournamentStarted ? 'Falta pa’l pitazo' : '¡Arranca el Mundial en…!'}
-            />
+          {totalPending > 0 && (
+            <span className="pill" style={{ background: 'var(--red)', color: '#fff' }}>⏰ Faltan {totalPending}</span>
           )}
         </div>
 
-        {/* Modos de navegación */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
-          {modeChip('dia', '📅 Por día')}
-          {modeChip('semana', '🗓️ Por semana')}
-          {modeChip('grupo', '🔠 Por grupo')}
-          {modeChip('fase', '🏟️ Por fase')}
+        {/* Héroe próximo partido */}
+        {heroMatch && (
+          <div className="hero">
+            <div className="hp">
+              <div className="tag">
+                {colombiaToday ? '🇨🇴 ¡HOY JUEGA LA TRICOLOR!' : heroMatch.group_name ? `Grupo ${heroMatch.group_name}` : ROUND_LABEL[heroMatch.round]} · {heroMatch.venue}
+              </div>
+              <div className="vs">
+                <div className="team"><div className="fl">{teamFlag(heroMatch.home_team)}</div><div className="nm">{teamShort(heroMatch.home_team)}</div></div>
+                <div className="mid">
+                  <div className="x">VS</div>
+                  <div className="when">{formatKickoff(heroMatch.kickoff_utc)} (Col)</div>
+                </div>
+                <div className="team"><div className="fl">{teamFlag(heroMatch.away_team)}</div><div className="nm">{teamShort(heroMatch.away_team)}</div></div>
+              </div>
+              <div className="flex justify-center pb-1">
+                <Countdown
+                  targetIso={new Date(heroMatch.kickoff_utc).toISOString()}
+                  label={tournamentStarted ? 'Falta pa’l pitazo' : '¡Arranca el Mundial en…!'}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modos de vista */}
+        <div className="seg" style={{ marginTop: 16 }}>
+          <Link className={vista === 'dia' ? 'on' : ''} href="/?vista=dia">📅 Día</Link>
+          <Link className={vista === 'semana' ? 'on' : ''} href="/?vista=semana">🗓️ Semana</Link>
+          <Link className={vista === 'grupo' ? 'on' : ''} href="/?vista=grupo">🔠 Grupo</Link>
+          <Link className={vista === 'fase' ? 'on' : ''} href="/?vista=fase">🏟️ Fase</Link>
         </div>
 
-        {/* Navegación secundaria según el modo */}
+        {/* Navegación secundaria */}
         {vista === 'dia' && (
-          <div className="flex gap-1 overflow-x-auto pb-2 -mx-1 px-1">
+          <div className="chips">
             {allDays.map((d) => {
               const pending = pendingByDay.get(d.key) ?? 0
-              const isPast = d.key < today
               const juegaColombia = d.matches.some((m) => m.home_team === 'Colombia' || m.away_team === 'Colombia')
               return (
-                <Link
-                  key={d.key}
-                  href={`/?vista=dia&dia=${d.key}`}
-                  className={`shrink-0 flex flex-col items-center rounded-xl border px-2.5 py-1.5 text-xs transition ${
-                    d.key === activeDay
-                      ? 'border-emerald-400 bg-emerald-950/50 text-emerald-200'
-                      : isPast
-                        ? 'border-slate-800/60 bg-slate-900/40 text-slate-500 hover:border-slate-600'
-                        : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-600'
-                  }`}
-                >
-                  <span className="capitalize font-semibold">{juegaColombia && '🇨🇴 '}{dayChipLabel(d.key)}</span>
-                  <span className="text-[10px] text-slate-500 capitalize">{dayMonthLabel(d.key)}</span>
-                  {pending > 0 ? (
-                    <span className="text-[10px] text-amber-400 font-bold">{pending} ⚠️</span>
-                  ) : (
-                    <span className="text-[10px] text-emerald-500">✓</span>
-                  )}
+                <Link key={d.key} href={`/?vista=dia&dia=${d.key}`} className={`chip ${d.key === activeDay ? 'on' : ''} ${pending > 0 ? 'warn' : ''}`}>
+                  {juegaColombia && '🇨🇴'}
+                  <span className="capitalize">{dayChipLabel(d.key)} {dayMonthLabel(d.key)}</span>
+                  {pending > 0 ? <b style={{ color: d.key === activeDay ? 'var(--yellow)' : 'var(--red)' }}>·{pending}</b> : '✓'}
                 </Link>
               )
             })}
@@ -203,117 +179,86 @@ export default async function FixturePage({
         )}
 
         {vista === 'semana' && (
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <div className="chips">
             {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((w) => (
-              <Link
-                key={w}
-                href={`/?vista=semana&semana=${w}`}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition ${
-                  w === activeWeek ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-600'
-                }`}
-              >
-                Semana {w}
-              </Link>
+              <Link key={w} href={`/?vista=semana&semana=${w}`} className={`chip ${w === activeWeek ? 'on' : ''}`}>Semana {w}</Link>
             ))}
           </div>
         )}
 
         {vista === 'grupo' && (
-          <div className="flex gap-1 overflow-x-auto pb-1">
-            {GROUPS.map((g) => {
-              const active = (GROUPS.includes(params.grupo ?? '') ? params.grupo : 'K') === g
-              return (
-                <Link
-                  key={g}
-                  href={`/?vista=grupo&grupo=${g}`}
-                  className={`shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-sm font-bold transition ${
-                    active ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-600'
-                  }`}
-                >
-                  {g === 'K' ? '🇨🇴' : g}
-                </Link>
-              )
-            })}
-          </div>
-        )}
-
-        {vista === 'fase' && (
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {Object.entries(ROUND_CHIP).map(([r, label]) => (
-              <Link
-                key={r}
-                href={`/?vista=fase&ronda=${r}`}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition ${
-                  Number(r) === activeRound ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-600'
-                }`}
-              >
-                {label}
+          <div className="chips">
+            {GROUPS.map((g) => (
+              <Link key={g} href={`/?vista=grupo&grupo=${g}`} className={`chip ${g === activeGroup ? 'on' : ''}`}>
+                {g === 'K' ? '🇨🇴 K' : g}
               </Link>
             ))}
           </div>
         )}
 
-        {/* Encabezado + enlace FIFA */}
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-lg font-bold capitalize">{title}</h1>
-            <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>
+        {vista === 'fase' && (
+          <div className="chips">
+            {Object.entries(ROUND_CHIP).map(([r, label]) => (
+              <Link key={r} href={`/?vista=fase&ronda=${r}`} className={`chip ${Number(r) === activeRound ? 'on' : ''}`}>{label}</Link>
+            ))}
           </div>
-          <a
-            href={FIFA_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 text-xs rounded-lg border border-slate-700 px-2.5 py-1.5 text-slate-300 hover:border-emerald-500 hover:text-emerald-300 transition"
-          >
-            📊 Estadísticas FIFA ↗
+        )}
+
+        {/* Título de la selección */}
+        <div className="flex items-start justify-between gap-2 px-[18px] pb-3">
+          <div>
+            <h1 className="display text-xl uppercase capitalize">{title}</h1>
+            <p className="text-[11px] font-bold" style={{ color: 'var(--muted)' }}>{subtitle}</p>
+          </div>
+          <a href={FIFA_URL} target="_blank" rel="noopener noreferrer" className="pill shrink-0" style={{ background: 'var(--paper)' }}>
+            📊 FIFA ↗
           </a>
         </div>
 
-        {/* Partidos agrupados por día */}
+        {/* Partidos */}
         {shownDays.map((d) => (
           <section key={d.key}>
             {(vista !== 'dia' || shownDays.length > 1) && (
-              <h2 className="text-sm font-semibold text-emerald-400/90 capitalize mb-2">{dayLongLabel(d.key)}</h2>
+              <p className="kicker capitalize px-[18px] pb-2" style={{ color: 'var(--green)' }}>{dayLongLabel(d.key)}</p>
             )}
-            <div className="space-y-2">
-              {d.matches.map((m) => {
-                const pred = myPreds.get(m.id)
-                return (
-                  <div key={m.id} className="relative">
-                    <span className="absolute -top-1.5 right-2 text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded z-[1]">
-                      {m.group_name ? `Grupo ${m.group_name}` : ROUND_LABEL[m.round]}
-                    </span>
-                    <MatchCard
-                      matchId={m.id}
-                      home={m.home_team}
-                      away={m.away_team}
-                      kickoffLabel={formatKickoff(m.kickoff_utc)}
-                      venue={m.venue}
-                      tv={tvColombia(m)}
-                      locked={new Date(m.kickoff_utc).getTime() <= now}
-                      status={m.status}
-                      actualHome={m.home_score}
-                      actualAway={m.away_score}
-                      initialHome={pred?.home_score ?? null}
-                      initialAway={pred?.away_score ?? null}
-                      points={pred?.points ?? null}
-                      maxExact={(scoring?.exact ?? 5) * (m.id === 104 ? scoring.final_multiplier : (scoring?.multipliers?.[String(m.round)] ?? 1))}
-                    />
-                  </div>
-                )
-              })}
-            </div>
+            {d.matches.map((m) => {
+              const pred = myPreds.get(m.id)
+              return (
+                <MatchCard
+                  key={m.id}
+                  matchId={m.id}
+                  home={m.home_team}
+                  away={m.away_team}
+                  kickoffLabel={formatKickoff(m.kickoff_utc)}
+                  venue={m.venue}
+                  tv={tvColombia(m)}
+                  groupLabel={m.group_name ? `Grupo ${m.group_name} · P${m.id}` : `${ROUND_LABEL[m.round]} · P${m.id}`}
+                  locked={new Date(m.kickoff_utc).getTime() <= now}
+                  status={m.status}
+                  actualHome={m.home_score}
+                  actualAway={m.away_score}
+                  initialHome={pred?.home_score ?? null}
+                  initialAway={pred?.away_score ?? null}
+                  points={pred?.points ?? null}
+                  maxExact={(scoring?.exact ?? 5) * (m.id === 104 ? scoring.final_multiplier : (scoring?.multipliers?.[String(m.round)] ?? 1))}
+                />
+              )
+            })}
           </section>
         ))}
 
-        {/* Info de transmisión */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-3 text-xs text-slate-400">
-          📺 <strong className="text-slate-300">¿Dónde ver los partidos en Colombia?</strong> DSports (DGO) y Paramount+
-          transmiten los 104 partidos · Caracol y RCN pasan 35 en señal abierta (incluida toda la Tricolor 🇨🇴) ·
-          Disney+ Premium tiene 30 · Resultados, estadísticas y alineaciones oficiales en{' '}
-          <a href={FIFA_URL} target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline">FIFA.com</a>.
+        {/* Transmisión */}
+        <div className="castigo">
+          <div className="big">📺</div>
+          <div className="t">
+            <b>¿Dónde verlos?</b> DSports (DGO) y Paramount+ pasan los 104 · Caracol y RCN dan 35 en abierta
+            (incluida toda la Tricolor 🇨🇴) · Estadísticas oficiales en{' '}
+            <a href={FIFA_URL} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--yellow)', textDecoration: 'underline' }}>FIFA.com</a>
+          </div>
         </div>
-      </main>
+        <div className="spacer" />
+      </div>
+      <Nav session={session} active="fixture" />
     </div>
   )
 }

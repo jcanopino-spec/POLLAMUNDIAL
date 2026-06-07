@@ -4,7 +4,7 @@ import PicksEditor from '@/components/PicksEditor'
 import { adminDb } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { type Scoring } from '@/lib/scoring'
-import { formatKickoff, teamLabel } from '@/lib/teams'
+import { formatKickoff, teamFlag, teamShort } from '@/lib/teams'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,15 +23,20 @@ export default async function ApuestasPage() {
   const scoring = cfg?.value as Scoring
 
   return (
-    <div className="flex-1">
-      <Nav session={session} active="campeon" />
-      <main className="max-w-3xl mx-auto px-4 py-6">
-        <h1 className="text-lg font-bold">💰 Tus apuestas grandes</h1>
-        <p className="text-xs text-slate-400 mt-1 mb-5">
+    <div className="shell">
+      <div className="shell-content fade">
+        <div className="appbar">
+          <div>
+            <div className="kicker">💰 Las grandes</div>
+            <h2 className="display">Apuestas</h2>
+          </div>
+          <span className="pill" style={{ background: 'var(--yellow)' }}>👑 +{scoring?.champion_bonus ?? 30}</span>
+        </div>
+        <p className="px-[18px] pb-4 text-xs font-bold -mt-1" style={{ color: 'var(--muted)' }}>
           {locked ? (
-            <>⛔ El Mundial ya comenzó: quedaron selladas. Tus finalistas: {me?.finalist1 ? teamLabel(me.finalist1) : '—'} y {me?.finalist2 ? teamLabel(me.finalist2) : '—'} · Campeón: {me?.champion_team ? `👑 ${teamLabel(me.champion_team)}` : '—'}</>
+            <>⛔ Selladas. Tus finalistas: {me?.finalist1 ? `${teamFlag(me.finalist1)} ${teamShort(me.finalist1)}` : '—'} y {me?.finalist2 ? `${teamFlag(me.finalist2)} ${teamShort(me.finalist2)}` : '—'} · Campeón: {me?.champion_team ? `👑 ${teamFlag(me.champion_team)} ${teamShort(me.champion_team)}` : '—'}</>
           ) : (
-            opener && <>Puedes cambiarlas hasta el pitazo inicial ({formatKickoff(opener.kickoff_utc)}, hora colombiana). Después, Zayu 🐆 no negocia.</>
+            opener && <>Puedes cambiarlas hasta el pitazo inicial ({formatKickoff(opener.kickoff_utc)}, hora Col). Después, la gallina 🐔 no negocia.</>
           )}
         </p>
         <PicksEditor
@@ -40,7 +45,9 @@ export default async function ApuestasPage() {
           finalistBonus={scoring?.finalist_bonus ?? 15}
           championBonus={scoring?.champion_bonus ?? 30}
         />
-      </main>
+        <div className="spacer" />
+      </div>
+      <Nav session={session} active="campeon" />
     </div>
   )
 }

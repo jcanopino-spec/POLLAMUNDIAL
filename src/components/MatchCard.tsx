@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { savePrediction } from '@/app/actions'
-import { teamLabel } from '@/lib/teams'
+import { teamFlag, teamShort } from '@/lib/teams'
 
 type Props = {
   matchId: number
@@ -11,6 +11,7 @@ type Props = {
   kickoffLabel: string
   venue: string | null
   tv: string
+  groupLabel: string
   locked: boolean
   status: 'scheduled' | 'live' | 'finished'
   actualHome: number | null
@@ -21,155 +22,113 @@ type Props = {
   maxExact: number
 }
 
-export default function MatchCard(p: Props) {
-  const [saved, setSaved] = useState<{ home: string; away: string } | null>(
-    p.initialHome != null ? { home: String(p.initialHome), away: String(p.initialAway ?? '') } : null
+function Stepper({ val, set, disabled, label }: { val: number; set: (v: number) => void; disabled: boolean; label: string }) {
+  return (
+    <div className="stepper">
+      <div className="num">{val}</div>
+      <div className="ctrls">
+        <button type="button" disabled={disabled} aria-label={`Menos goles ${label}`} onClick={() => set(Math.max(0, val - 1))}>−</button>
+        <button type="button" disabled={disabled} aria-label={`Más goles ${label}`} onClick={() => set(Math.min(15, val + 1))}>+</button>
+      </div>
+    </div>
   )
-  const [home, setHome] = useState(saved?.home ?? '')
-  const [away, setAway] = useState(saved?.away ?? '')
-  // Sin pronóstico guardado → directo en modo edición; con uno → modo lectura con ✏️
+}
+
+export default function MatchCard(p: Props) {
+  const [saved, setSaved] = useState<{ home: number; away: number } | null>(
+    p.initialHome != null ? { home: p.initialHome, away: p.initialAway ?? 0 } : null
+  )
+  const [home, setHome] = useState(saved?.home ?? 0)
+  const [away, setAway] = useState(saved?.away ?? 0)
   const [editing, setEditing] = useState(saved == null)
-  const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null)
+  const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
 
-  const complete = home !== '' && away !== ''
+  const esColombia = p.home === 'Colombia' || p.away === 'Colombia'
+  const dirty = !saved || saved.home !== home || saved.away !== away
 
-  function save() {
-    if (!complete || p.locked || pending) return
+  function onButton() {
+    if (p.locked || pending) return
+    if (!editing) {
+      setEditing(true)
+      setError('')
+      return
+    }
     startTransition(async () => {
-      const res = await savePrediction(p.matchId, Number(home), Number(away))
+      const res = await savePrediction(p.matchId, home, away)
       if (res?.error) {
-        setMsg({ text: res.error })
+        setError(res.error)
       } else {
         setSaved({ home, away })
         setEditing(false)
-        setMsg({ ok: true, text: '✓ Guardado' })
+        setError('')
       }
     })
   }
 
-  function startEdit() {
-    if (p.locked) return
-    setMsg(null)
-    setEditing(true)
-  }
-
-  function cancelEdit() {
-    if (!saved) return
-    setHome(saved.home)
-    setAway(saved.away)
-    setMsg(null)
-    setEditing(false)
-  }
-
-  const scoreInput = (value: string, set: (v: string) => void, label: string) => (
-    <input
-      type="number"
-      inputMode="numeric"
-      min={0}
-      max={99}
-      value={value}
-      aria-label={label}
-      disabled={p.locked || !editing}
-      onChange={(e) => {
-        set(e.target.value)
-        setMsg(null)
-      }}
-      onKeyDown={(e) => e.key === 'Enter' && save()}
-      className={`w-12 h-10 text-center rounded-lg border font-bold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-        editing && !p.locked
-          ? 'bg-slate-800 border-emerald-600/70 text-white focus:border-emerald-400'
-          : 'bg-slate-900 border-slate-800 text-slate-300'
-      }`}
-    />
-  )
-
-  const esColombia = p.home === 'Colombia' || p.away === 'Colombia'
-
-  return (
-    <div
-      className={`rounded-xl border p-3 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-900/30 ${
-        p.status === 'live'
-          ? 'border-amber-500/60 bg-amber-950/20'
-          : esColombia
-            ? 'border-yellow-500/50 bg-gradient-to-br from-yellow-950/30 via-blue-950/20 to-red-950/20'
-            : 'border-slate-800 bg-slate-900/60'
-      }`}
-    >
-      <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-        <span>
-          P{p.matchId} · {p.kickoffLabel} <span className="text-slate-600">(Col)</span>
-        </span>
-        {p.status === 'live' && <span className="text-amber-400 font-semibold animate-pulse">● EN JUEGO</span>}
-        {p.status === 'finished' && p.points != null && (
-          <span className={`font-bold ${p.points > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
-            {p.points >= p.maxExact ? `🎯 ¡EXACTO! +${p.points} pts 🎉` : p.points > 0 ? `✔️ +${p.points} pts` : '0 pts 🫠'}
-          </span>
-        )}
-        {p.locked && p.status === 'scheduled' && <span title="Ya pitó el árbitro: cerrado">🔒</span>}
-      </div>
-
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <span className="text-sm font-medium text-right truncate">{teamLabel(p.home)}</span>
-        <div className="flex items-center gap-1.5">
-          {scoreInput(home, setHome, `Goles ${p.home}`)}
-          <span className="text-slate-500 font-bold">–</span>
-          {scoreInput(away, setAway, `Goles ${p.away}`)}
+  // Partido terminado: resultado grande + badge de puntos
+  if (p.status === 'finished') {
+    const kind = p.points == null ? null : p.points >= p.maxExact ? 'hit' : p.points > 0 ? 'part' : 'miss'
+    return (
+      <div className="match done fade">
+        <div className="mtop">
+          <span className="grp">{p.groupLabel}</span>
+          <span>{p.kickoffLabel} · FINAL</span>
         </div>
-        <span className="text-sm font-medium truncate">{teamLabel(p.away)}</span>
-      </div>
-
-      {/* Acciones: ✏️ modificar / 💾 guardar (solo mientras no inicie el partido) */}
-      {!p.locked && (
-        <div className="flex items-center justify-center gap-2 mt-2">
-          {editing ? (
-            <>
-              <button
-                onClick={save}
-                disabled={pending || !complete}
-                title="Guardar pronóstico"
-                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 transition"
-              >
-                💾 {pending ? 'Guardando…' : 'Guardar'}
-              </button>
-              {saved && (
-                <button
-                  onClick={cancelEdit}
-                  disabled={pending}
-                  title="Cancelar cambios"
-                  className="rounded-lg border border-slate-700 text-slate-400 hover:text-white text-xs px-3 py-1.5 transition"
-                >
-                  ✕ Cancelar
-                </button>
-              )}
-            </>
-          ) : (
-            <button
-              onClick={startEdit}
-              title="Modificar pronóstico"
-              className="flex items-center gap-1.5 rounded-lg border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-emerald-300 text-xs font-semibold px-3 py-1.5 transition"
-            >
-              ✏️ Modificar
-            </button>
+        <div className="mbody" style={{ paddingBottom: 6 }}>
+          <div className="mteam"><div className="fl">{teamFlag(p.home)}</div><div className="nm">{teamShort(p.home)}</div></div>
+          <div className="resultline"><span className="big">{p.actualHome}</span><span className="scoremid">:</span><span className="big">{p.actualAway}</span></div>
+          <div className="mteam"><div className="fl">{teamFlag(p.away)}</div><div className="nm">{teamShort(p.away)}</div></div>
+        </div>
+        <div className="predbadge">
+          <span className="pl">
+            {saved ? <>Tu pronóstico: <b>{saved.home}–{saved.away}</b></> : 'No pronosticaste 🫥'}
+          </span>
+          {kind && (
+            <span className={`ptsbadge ${kind}`}>
+              {kind === 'hit' ? '¡Exacto!' : kind === 'part' ? 'Acertaste' : 'Falló'} · +{p.points}
+            </span>
           )}
         </div>
-      )}
+      </div>
+    )
+  }
 
-      {p.status === 'finished' && (
-        <p className="text-center text-xs text-slate-400 mt-2">
-          Resultado real: <span className="text-white font-bold">{p.actualHome} – {p.actualAway}</span>
-        </p>
-      )}
-
-      <p className="text-center text-[10px] text-slate-500 mt-1.5 truncate">
-        {p.venue && <>🏟️ {p.venue} · </>}📺 {p.tv}
-      </p>
-
-      <div className="h-4 mt-0.5 text-center text-xs">
-        {msg && <span className={msg.ok ? 'text-emerald-400' : 'text-red-400'}>{msg.text}</span>}
-        {!msg && !p.locked && !editing && saved && (
-          <span className="text-slate-500">Tu pronóstico: {saved.home} – {saved.away} (puedes modificarlo hasta el pitazo)</span>
+  return (
+    <div className={`match fade ${p.status === 'live' ? 'live' : esColombia ? 'col' : ''}`}>
+      <div className="mtop">
+        <span className="grp">{esColombia && '🇨🇴 '}{p.groupLabel}</span>
+        <span>{p.status === 'live' ? '● EN JUEGO' : p.kickoffLabel}</span>
+      </div>
+      <div className="mbody">
+        <div className="mteam"><div className="fl">{teamFlag(p.home)}</div><div className="nm">{teamShort(p.home)}</div></div>
+        <div className="flex items-center gap-1">
+          <Stepper val={home} set={(v) => { setHome(v); setError('') }} disabled={p.locked || !editing} label={p.home} />
+          <span className="scoremid">:</span>
+          <Stepper val={away} set={(v) => { setAway(v); setError('') }} disabled={p.locked || !editing} label={p.away} />
+        </div>
+        <div className="mteam"><div className="fl">{teamFlag(p.away)}</div><div className="nm">{teamShort(p.away)}</div></div>
+      </div>
+      <div className="mfoot">
+        {p.locked ? (
+          <div className="predbadge" style={{ margin: 0 }}>
+            <span className="pl">{saved ? <>Tu pronóstico: <b>{saved.home}–{saved.away}</b></> : 'Te cogió la noche 🫥'}</span>
+            <span className="ptsbadge" style={{ background: 'var(--cream-2)' }}>🔒</span>
+          </div>
+        ) : (
+          <>
+            <button className={`savebtn ${!editing ? 'saved' : ''}`} disabled={pending || (editing && !dirty && !!saved)} onClick={onButton}>
+              {pending ? 'Guardando…' : !editing ? '✓ Guardado · editar ✏️' : 'Guardar pronóstico 💾'}
+            </button>
+            {!editing && saved && (
+              <div className="savedline">¡Quedó! {teamShort(p.home)} {saved.home}–{saved.away} {teamShort(p.away)} 🔒 al pitazo</div>
+            )}
+            {error && <div className="savedline err">{error}</div>}
+          </>
         )}
+        <p className="text-center text-[10px] font-bold pt-2" style={{ color: 'var(--muted)' }}>
+          🏟️ {p.venue} · 📺 {p.tv}
+        </p>
       </div>
     </div>
   )

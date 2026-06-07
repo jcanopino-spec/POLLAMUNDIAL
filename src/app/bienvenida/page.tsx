@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import WelcomeWizard from '@/components/WelcomeWizard'
 import { Confetti } from '@/components/Fiesta'
+import { logout } from '@/app/login/actions'
 import { adminDb } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { type Scoring } from '@/lib/scoring'
@@ -25,17 +26,22 @@ export default async function BienvenidaPage() {
   const picksLocked = !!opener && new Date(opener.kickoff_utc).getTime() <= Date.now()
 
   return (
-    <div className="flex-1 relative">
+    <div className="shell">
       <Confetti density={0.5} />
+      <div className="shell-content relative z-[1]">
+        <WelcomeWizard
+          name={session.name}
+          mustChangePin={me.must_change_pin}
+          picks={{ finalist1: me.finalist1, finalist2: me.finalist2, champion: me.champion_team }}
+          picksLocked={picksLocked}
+          openerLabel={opener ? formatKickoff(opener.kickoff_utc) : '11 de junio'}
+          scoring={scoring}
+        />
+        <form action={logout} className="section-pad pt-0">
+          <button className="btn ghost">CERRAR SESIÓN 👋</button>
+        </form>
+      </div>
       <Nav session={session} active="reglas" />
-      <WelcomeWizard
-        name={session.name}
-        mustChangePin={me.must_change_pin}
-        picks={{ finalist1: me.finalist1, finalist2: me.finalist2, champion: me.champion_team }}
-        picksLocked={picksLocked}
-        openerLabel={opener ? formatKickoff(opener.kickoff_utc) : '11 de junio'}
-        scoring={scoring}
-      />
     </div>
   )
 }

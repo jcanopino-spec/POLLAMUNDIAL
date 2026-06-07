@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { savePicks } from '@/app/actions'
-import { ALL_TEAMS, teamLabel } from '@/lib/teams'
+import { ALL_TEAMS, teamFlag, teamShort } from '@/lib/teams'
 
 type Props = {
   initial: { finalist1: string | null; finalist2: string | null; champion: string | null }
@@ -28,7 +28,7 @@ export default function PicksEditor({ initial, locked, finalistBonus, championBo
         if (champion === team) setChampion(null)
         return prev.filter((t) => t !== team)
       }
-      if (prev.length >= 2) return [prev[1], team] // reemplaza el más viejo
+      if (prev.length >= 2) return [prev[1], team]
       return [...prev, team]
     })
   }
@@ -39,74 +39,88 @@ export default function PicksEditor({ initial, locked, finalistBonus, championBo
       const res = await savePicks(finalists[0], finalists[1], champion)
       if (res?.error) setMsg({ text: res.error })
       else {
-        setMsg({ ok: true, text: '✓ Apuestas grandes guardadas. Que los dioses del fútbol te acompañen ⚽' })
+        setMsg({ ok: true, text: '✓ ¡Quedaron las apuestas grandes! Que la gallina te acompañe 🐔' })
         onSaved?.()
       }
     })
   }
 
   return (
-    <div className="space-y-5">
+    <div className="px-[18px] space-y-5">
       <div>
-        <h3 className="font-semibold text-sm mb-1">
-          1️⃣ Tus dos finalistas <span className="text-amber-400">({finalistBonus} pts cada uno)</span>
-        </h3>
-        <p className="text-xs text-slate-400 mb-2">Los dos equipos que según tú llegan a la final. Toca para elegir (máx. 2).</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-          {ALL_TEAMS.map((t) => (
-            <button
-              key={t}
-              onClick={() => toggleFinalist(t)}
-              disabled={locked}
-              className={`rounded-lg border px-2.5 py-2 text-sm text-left transition disabled:opacity-50 ${
-                finalists.includes(t)
-                  ? 'border-emerald-400 bg-emerald-950/50 text-emerald-200 font-semibold'
-                  : 'border-slate-800 bg-slate-900/60 hover:border-slate-600'
-              }`}
-            >
-              {teamLabel(t)}
-            </button>
-          ))}
+        <p className="kicker mb-1" style={{ color: 'var(--green)' }}>
+          1️⃣ Tus dos finalistas · {finalistBonus} pts c/u
+        </p>
+        <p className="text-xs font-bold mb-2" style={{ color: 'var(--muted)' }}>
+          Los dos que según tú llegan a la final. Toca para elegir (máx. 2).
+        </p>
+        <div className="grid grid-cols-2 gap-1.5">
+          {ALL_TEAMS.map((t) => {
+            const on = finalists.includes(t)
+            return (
+              <button
+                key={t}
+                onClick={() => toggleFinalist(t)}
+                disabled={locked}
+                className="text-left text-[13px] font-extrabold rounded-xl px-2.5 py-2 transition disabled:opacity-50"
+                style={{
+                  border: '2.5px solid var(--ink)',
+                  background: on ? 'var(--green)' : 'var(--paper)',
+                  color: on ? '#fff' : 'var(--ink)',
+                  boxShadow: on ? '0 3px 0 var(--ink)' : 'none',
+                }}
+              >
+                {teamFlag(t)} {teamShort(t)}
+              </button>
+            )
+          })}
         </div>
       </div>
 
       {finalists.length === 2 && (
         <div>
-          <h3 className="font-semibold text-sm mb-1">
-            2️⃣ Y de esos dos, tu campeón <span className="text-amber-400">({championBonus} pts)</span>
-          </h3>
+          <p className="kicker mb-2" style={{ color: 'var(--green)' }}>
+            2️⃣ Y de esos dos, tu campeón · {championBonus} pts
+          </p>
           <div className="grid grid-cols-2 gap-2">
-            {finalists.map((t) => (
-              <button
-                key={t}
-                onClick={() => !locked && (setChampion(t), setMsg(null))}
-                disabled={locked}
-                className={`rounded-xl border-2 px-3 py-4 text-center font-bold transition disabled:opacity-50 ${
-                  champion === t
-                    ? 'border-amber-400 bg-amber-950/50 text-amber-200'
-                    : 'border-slate-700 bg-slate-900 hover:border-slate-500'
-                }`}
-              >
-                {champion === t && '👑 '}
-                {teamLabel(t)}
-              </button>
-            ))}
+            {finalists.map((t) => {
+              const on = champion === t
+              return (
+                <button
+                  key={t}
+                  onClick={() => !locked && (setChampion(t), setMsg(null))}
+                  disabled={locked}
+                  className="display text-base uppercase rounded-2xl px-3 py-4 text-center transition disabled:opacity-50"
+                  style={{
+                    border: '3px solid var(--ink)',
+                    background: on ? 'var(--yellow)' : 'var(--paper)',
+                    boxShadow: on ? '0 5px 0 var(--ink)' : 'none',
+                  }}
+                >
+                  {on && '👑 '}
+                  {teamFlag(t)} {teamShort(t)}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
 
       <div className="space-y-2">
-        {msg && <p className={`text-sm ${msg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{msg.text}</p>}
-        {!locked && (
-          <button
-            onClick={save}
-            disabled={pending || finalists.length !== 2 || !champion}
-            className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-semibold py-2.5 transition"
-          >
-            {pending ? 'Guardando…' : finalists.length !== 2 ? 'Elige tus 2 finalistas' : !champion ? 'Falta coronar al campeón 👑' : 'Confirmar apuestas grandes 💰'}
-          </button>
+        {msg && (
+          <p className="text-sm font-bold text-center" style={{ color: msg.ok ? 'var(--green)' : 'var(--red-d)' }}>
+            {msg.text}
+          </p>
         )}
-        {locked && <p className="text-xs text-slate-500">⛔ El Mundial ya comenzó: estas apuestas quedaron selladas.</p>}
+        {!locked ? (
+          <button className="btn green" onClick={save} disabled={pending || finalists.length !== 2 || !champion}>
+            {pending ? 'GUARDANDO…' : finalists.length !== 2 ? 'ELIGE TUS 2 FINALISTAS' : !champion ? 'CORONA A TU CAMPEÓN 👑' : '¡CONFIRMAR APUESTAS! 💰'}
+          </button>
+        ) : (
+          <p className="text-xs font-bold text-center" style={{ color: 'var(--muted)' }}>
+            ⛔ El Mundial ya comenzó: estas apuestas quedaron selladas.
+          </p>
+        )}
       </div>
     </div>
   )

@@ -3,8 +3,9 @@ import Nav from '@/components/Nav'
 import { adminDb, type Participant } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { FINAL_MATCH_ID, type Scoring } from '@/lib/scoring'
-import { isPlaceholder, teamLabel } from '@/lib/teams'
+import { isPlaceholder, teamFlag, teamShort } from '@/lib/teams'
 import { syncResults } from '@/lib/sync'
+import { avatarFor } from '@/lib/avatar'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +28,6 @@ export default async function PosicionesPage() {
   const scoring = cfg?.value as Scoring
   const actual = new Map((finished ?? []).map((m) => [m.id, m]))
   const champion = final?.status === 'finished' ? final.winner : null
-  // Los finalistas reales se conocen cuando el partido 104 ya tiene equipos (no placeholders tipo 'W101')
   const realFinalists =
     final && !isPlaceholder(final.home_team) && !isPlaceholder(final.away_team)
       ? [final.home_team, final.away_team]
@@ -49,7 +49,19 @@ export default async function PosicionesPage() {
 
   rows.sort((a, b) => b.total - a.total || b.exact - a.exact || a.name.localeCompare(b.name))
 
-  // 🏠 Guerra de casas: suma de los puntos de todos los habitantes
+  // Frase de cada jugador (con humor, estilo del diseño)
+  const note = (r: (typeof rows)[number], i: number): string => {
+    if (i === 0 && r.total > 0) return '👑 manda en la mesa'
+    if (i === rows.length - 1 && rows.length > 2) return '🐷 va por el cerdo'
+    if (r.championHit) return `clavó al campeón +${scoring?.champion_bonus ?? 30} 👑`
+    if (r.exact > 1) return `${r.exact} exactos · francotirador 🎯`
+    if (r.exact === 1) return 'clavó un marcador 🎯'
+    if (r.outcome > 0) return `${r.outcome} acierto(s) ✔️`
+    if (r.champion_team) return `le apuesta a ${teamShort(r.champion_team)} ${teamFlag(r.champion_team)}`
+    return 'pronostica con el corazón 💘'
+  }
+
+  // 🏠 Guerra de casas
   const houseMap = new Map<string, { total: number; members: typeof rows }>()
   for (const r of rows) {
     const key = r.house_number?.trim() || null
@@ -63,149 +75,101 @@ export default async function PosicionesPage() {
     .map(([house, h]) => ({ house, ...h, avg: h.total / h.members.length }))
     .sort((a, b) => b.total - a.total || b.avg - a.avg)
 
-  const medal = (i: number) => (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`)
   const played = actual.size
+  const last = rows.length > 2 ? rows[rows.length - 1] : null
 
   return (
-    <div className="flex-1">
-      <Nav session={session} active="posiciones" />
-      <main className="max-w-3xl mx-auto px-4 py-6">
-        <div className="flex items-baseline justify-between mb-4">
-          <h1 className="text-lg font-extrabold bg-gradient-to-r from-amber-300 via-emerald-300 to-sky-300 bg-clip-text text-transparent">
-            🏆 Tabla de posiciones
-          </h1>
-          <span className="text-xs text-slate-400">{played} de 104 partidos jugados</span>
-        </div>
-
-        {/* Podio de la natillera */}
-        {rows.length >= 3 && (
-          <div className="grid grid-cols-3 gap-2 items-end mb-5">
-            {[rows[1], rows[0], rows[2]].map((r, i) => {
-              const pos = i === 1 ? 0 : i === 0 ? 1 : 2
-              const alturas = ['h-24', 'h-32', 'h-20']
-              const estilos = [
-                'from-slate-500/30 to-slate-700/30 border-slate-500/50',
-                'from-amber-500/30 to-amber-800/30 border-amber-400/60 glow-gold',
-                'from-orange-700/30 to-orange-900/30 border-orange-600/50',
-              ]
-              return (
-                <div
-                  key={r.id}
-                  className={`${alturas[i]} rounded-t-xl border bg-gradient-to-b ${estilos[i]} flex flex-col items-center justify-end pb-2 px-1`}
-                >
-                  <span className="text-2xl">{['🥈', '🥇', '🥉'][i]}</span>
-                  <span className="text-xs font-bold truncate max-w-full">{r.name}</span>
-                  <span className={`text-sm font-extrabold ${pos === 0 ? 'text-amber-300' : 'text-slate-300'}`}>{r.total} pts</span>
-                </div>
-              )
-            })}
+    <div className="shell">
+      <div className="shell-content fade">
+        <div className="appbar">
+          <div>
+            <div className="kicker">⚽ {played} de 104 jugados</div>
+            <h2 className="display">Tabla de<br />posiciones</h2>
           </div>
-        )}
-
-        <div className="rounded-xl border border-slate-800 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-900 text-slate-400 text-xs uppercase">
-              <tr>
-                <th className="px-3 py-2.5 text-left w-10">#</th>
-                <th className="px-2 py-2.5 text-left">Participante</th>
-                <th className="px-2 py-2.5 text-center" title="Marcadores exactos">🎯</th>
-                <th className="px-2 py-2.5 text-center" title="Solo resultado">✔️</th>
-                <th className="px-2 py-2.5 text-center hidden sm:table-cell">Campeón</th>
-                <th className="px-3 py-2.5 text-right">Pts</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/70">
-              {rows.map((r, i) => (
-                <tr key={r.id} className={r.id === session.id ? 'bg-emerald-950/40' : i % 2 ? 'bg-slate-900/40' : ''}>
-                  <td className="px-3 py-2.5 font-semibold">{medal(i)}</td>
-                  <td className="px-2 py-2.5 font-medium">
-                    {r.name}
-                    {r.nickname && <span className="text-slate-400 italic text-xs"> “{r.nickname}”</span>}
-                    {r.house_number && <span className="text-sky-400/80 text-[10px] ml-1">🏠{r.house_number}</span>}
-                    {r.id === session.id && <span className="text-emerald-400 text-xs ml-1">(tú)</span>}
-                  </td>
-                  <td className="px-2 py-2.5 text-center text-emerald-300">{r.exact}</td>
-                  <td className="px-2 py-2.5 text-center text-slate-300">{r.outcome}</td>
-                  <td className="px-2 py-2.5 text-center hidden sm:table-cell text-xs">
-                    {r.champion_team ? (
-                      <span className={r.championHit ? 'text-amber-400 font-bold' : ''}>
-                        👑 {teamLabel(r.champion_team)}
-                        {r.finalistHits > 0 && <span className="text-emerald-400"> ⭐{r.finalistHits}</span>}
-                        {r.bonus > 0 && <span className="text-amber-400"> +{r.bonus}</span>}
-                      </span>
-                    ) : (
-                      <span className="text-slate-600">—</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2.5 text-right font-bold text-base">{r.total}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <span className="pill" style={{ background: 'var(--yellow)' }}>{rows.length} 👥</span>
         </div>
 
-        <p className="text-xs text-slate-500 mt-3">
-          🎯 marcadores exactos · ✔️ solo resultado · ⭐ finalistas acertados ({scoring?.finalist_bonus ?? 15} pts c/u) ·
-          👑 campeón ({scoring?.champion_bonus ?? 30} pts) · La tabla se actualiza solita al terminar cada partido.
-          Maple 🫎, Zayu 🐆 y Clutch 🦅 no aceptan sobornos.
-        </p>
+        <div className="rk-list">
+          {rows.map((r, i) => {
+            const isMe = r.id === session.id
+            const cls = `row${i === 0 ? ' lead' : ''}${isMe ? ' me' : ''}${i === rows.length - 1 && rows.length > 2 ? ' last' : ''}`
+            return (
+              <div className={cls} key={r.id}>
+                <div className="pos">{i + 1}</div>
+                <div className="av" style={i === 0 ? { background: '#FFE08A' } : {}}>{avatarFor(r.nickname || r.name)}</div>
+                <div className="nm">
+                  <b>
+                    {r.nickname || r.name}
+                    {isMe && <span style={{ color: 'var(--blue)' }}> · tú</span>}
+                    {r.house_number && <span className="font-normal text-[11px]" style={{ color: 'var(--muted)' }}> 🏠{r.house_number}</span>}
+                  </b>
+                  {i === 0 || (i === rows.length - 1 && rows.length > 2) ? (
+                    <span className="tag-mini" style={i === 0 ? { background: '#fff' } : { background: 'var(--red)', color: '#fff' }}>
+                      {note(r, i)}
+                    </span>
+                  ) : (
+                    <small>{note(r, i)}</small>
+                  )}
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div className="pts">{r.total}<small>PTS</small></div>
+                  {r.bonus > 0 && <div className="text-[11px] font-extrabold" style={{ color: 'var(--green)' }}>⭐ +{r.bonus}</div>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="castigo">
+          <div className="big">🐷</div>
+          <div className="t">
+            Quien quede <b>último</b> al final del Mundial pone el <b>guaro</b> y el <b>cerdo de la porcícola</b>.
+            {last && <> Va perdiendo <b>{last.nickname || last.name}</b> 😅 — ¡no te descuides!</>}
+          </div>
+        </div>
 
         {/* 🏠 Guerra de casas */}
         {houses.length >= 2 && (
-          <section className="mt-8">
-            <h2 className="text-lg font-extrabold bg-gradient-to-r from-sky-300 via-emerald-300 to-amber-300 bg-clip-text text-transparent mb-1">
-              🏠 La guerra de casas
-            </h2>
-            <p className="text-xs text-slate-400 mb-3">
-              Aquí no se salva nadie: los puntos de cada vecino suman para su casa. Honor para una… y sancocho para otra.
+          <>
+            <div className="subhead">🏠 La guerra de casas</div>
+            <p className="px-[18px] pb-3 text-xs font-bold -mt-1" style={{ color: 'var(--muted)' }}>
+              Los puntos de cada vecino suman pa’ su casa. Honor para una… sancocho para otra.
             </p>
-            <div className="space-y-2">
+            <div className="rk-list">
               {houses.map((h, i) => {
                 const first = i === 0
-                const last = i === houses.length - 1
+                const lastH = i === houses.length - 1
                 return (
-                  <div
-                    key={h.house}
-                    className={`rounded-xl border p-3 flex items-center gap-3 ${
-                      first
-                        ? 'border-amber-400/60 bg-gradient-to-r from-amber-950/40 to-slate-900/60 glow-gold'
-                        : last
-                          ? 'border-rose-800/60 bg-rose-950/20'
-                          : 'border-slate-800 bg-slate-900/50'
-                    }`}
-                  >
-                    <span className="text-2xl shrink-0">{first ? '👑' : last ? '🥄' : '🏠'}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold">
-                        Casa {h.house}
-                        <span className="text-xs font-normal text-slate-400 ml-2">
-                          {first
-                            ? '— aquí SÍ se ve fútbol 🔥'
-                            : last
-                              ? '— van pagando el sancocho 🍲'
-                              : ''}
-                        </span>
-                      </p>
-                      <p className="text-xs text-slate-400 truncate">
+                  <div key={h.house} className={`row${first ? ' lead' : ''}${lastH ? ' last' : ''}`}>
+                    <div className="av" style={{ fontSize: 20 }}>{first ? '👑' : lastH ? '🥄' : '🏠'}</div>
+                    <div className="nm">
+                      <b>Casa {h.house}</b>
+                      <small>
+                        {first ? 'aquí SÍ se ve fútbol 🔥 · ' : lastH ? 'van pagando el sancocho 🍲 · ' : ''}
                         {h.members.map((m) => m.nickname || m.name).join(' · ')}
-                      </p>
+                      </small>
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="font-extrabold text-lg">{h.total} pts</p>
-                      <p className="text-[10px] text-slate-500">
-                        {h.members.length} jugador(es) · prom. {h.avg.toFixed(1)}
-                      </p>
+                    <div style={{ textAlign: 'right' }}>
+                      <div className="pts">{h.total}<small>PTS</small></div>
+                      <div className="text-[10px] font-extrabold" style={{ color: 'var(--muted)' }}>prom. {h.avg.toFixed(1)}</div>
                     </div>
                   </div>
                 )
               })}
             </div>
-            <p className="text-[11px] text-slate-600 mt-2">
-              * Se suma el total de cada habitante. Casa que invita más gente, suma más… así que recluten 😏
+            <p className="px-[18px] pt-1 text-[11px] font-bold" style={{ color: 'var(--muted)' }}>
+              * Casa que recluta más gente, suma más… así que recluten 😏
             </p>
-          </section>
+          </>
         )}
-      </main>
+
+        <p className="px-[18px] pt-4 text-[11px] font-bold" style={{ color: 'var(--muted)' }}>
+          🎯 exacto {scoring?.exact ?? 5} · ✔️ resultado {scoring?.outcome ?? 3} (suben por fase) · ⭐ finalista +{scoring?.finalist_bonus ?? 15} ·
+          👑 campeón +{scoring?.champion_bonus ?? 30}. La tabla se actualiza solita al final de cada partido. La gallina 🐔 no acepta sobornos.
+        </p>
+        <div className="spacer" />
+      </div>
+      <Nav session={session} active="posiciones" />
     </div>
   )
 }

@@ -14,12 +14,6 @@ type Props = {
   scoring: { exact: number; outcome: number; champion_bonus: number; finalist_bonus: number }
 }
 
-const MASCOTAS = [
-  { emoji: '🫎', nombre: 'Maple', pais: 'Canadá', frase: 'El alce que no perdona un pronóstico tarde.' },
-  { emoji: '🐆', nombre: 'Zayu', pais: 'México', frase: 'El jaguar que ya sabe quién va a quedar de último.' },
-  { emoji: '🦅', nombre: 'Clutch', pais: 'EE. UU.', frase: 'El águila que ve TODO… hasta tus 0 puntos.' },
-]
-
 export default function WelcomeWizard(p: Props) {
   const router = useRouter()
   const picksDone = !!(p.picks.finalist1 && p.picks.finalist2 && p.picks.champion)
@@ -39,64 +33,47 @@ export default function WelcomeWizard(p: Props) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      {/* Mascotas */}
-      <div className="text-center mb-6">
-        <div className="text-5xl tracking-wide">🫎 🐆 🦅</div>
-        <h1 className="text-2xl font-extrabold mt-2 bg-gradient-to-r from-red-400 via-emerald-400 to-sky-400 bg-clip-text text-transparent">
-          ¡Bienvenido a la Polla, {p.name}!
+    <div className="fade">
+      {/* Cabecera con la gallina */}
+      <div className="text-center px-6 pt-4">
+        <div className="flagline justify-center">
+          <span style={{ background: 'var(--red)' }} />
+          <span style={{ background: 'var(--green)' }} />
+          <span style={{ background: 'var(--blue)' }} />
+        </div>
+        <div className="mascot bob" style={{ width: 96, height: 96, fontSize: 52 }}>
+          🐔<span className="ball">⚽</span>
+        </div>
+        <h1 className="display text-3xl uppercase leading-none">
+          ¡Bienvenido, <span style={{ color: 'var(--green)' }}>{p.name}</span>!
         </h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Mundial 2026 · Canadá, México y Estados Unidos · <span className="font-semibold text-slate-300">WE ARE 26</span>
-        </p>
+        <div className="we">WE ARE 26 · MUNDIAL 2026</div>
       </div>
 
       {/* Pasos */}
-      <div className="flex justify-center gap-2 mb-6 text-xs">
-        {[
-          ['reglas', '📜 Reglas'],
-          ...(p.mustChangePin ? [['pin', '🔐 Tu PIN']] : []),
-          ...(needsPicks || picksDone ? [['picks', '💰 Apuestas']] : []),
-        ].map(([key, label]) => (
-          <span
-            key={key}
-            className={`px-3 py-1 rounded-full border ${
-              step === key ? 'border-emerald-400 text-emerald-300 bg-emerald-950/40' : 'border-slate-800 text-slate-500'
-            }`}
-          >
-            {label}
-          </span>
-        ))}
+      <div className="chips justify-center pt-4">
+        <span className={`chip ${step === 'reglas' ? 'on' : ''}`}>📜 Reglas</span>
+        {p.mustChangePin && <span className={`chip ${step === 'pin' ? 'on' : ''}`}>🔐 Tu PIN</span>}
+        {(needsPicks || picksDone) && <span className={`chip ${step === 'picks' ? 'on' : ''}`}>💰 Apuestas</span>}
       </div>
 
       {step === 'reglas' && (
-        <div className="space-y-4">
-          <div className="grid sm:grid-cols-3 gap-2">
-            {MASCOTAS.map((m) => (
-              <div key={m.nombre} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-center">
-                <div className="text-3xl">{m.emoji}</div>
-                <div className="font-bold text-sm mt-1">{m.nombre} <span className="text-slate-500 font-normal">· {m.pais}</span></div>
-                <div className="text-xs text-slate-400 mt-1">{m.frase}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-3 text-sm">
-            <h2 className="font-bold text-base">📜 Las reglas del juego (léelas, que después no valen reclamos)</h2>
-            <ol className="space-y-2.5 list-none">
-              <li>🔮 <strong>Pronostica el marcador</strong> de los 104 partidos. Puedes cambiar tu pronóstico las veces que quieras… <strong>hasta que el árbitro pite</strong>. Después no hay nada que hacer: ni llorando, ni con tutela, ni "es que se me cayó el internet".</li>
-              <li>🎯 <strong>Marcador exacto = {p.scoring.exact} pts.</strong> ✔️ Acertar solo quién gana (o el empate) = <strong>{p.scoring.outcome} pts.</strong></li>
-              <li>📈 Entre más avanza el Mundial, más vale el acierto: 16avos <strong>×2</strong>, octavos <strong>×3</strong>, cuartos <strong>×4</strong>, semis <strong>×5</strong> y la final <strong>×6</strong>. Un exacto en la final son <strong>{p.scoring.exact * 6} puntazos</strong>.</li>
-              <li>💰 Antes del pitazo inicial ({p.openerLabel}, hora colombiana) eliges tus <strong>2 finalistas ({p.scoring.finalist_bonus} pts cada uno)</strong> y de esos dos, tu <strong>campeón ({p.scoring.champion_bonus} pts)</strong>.</li>
-              <li>📊 La tabla de posiciones se actualiza solita al terminar cada partido. En eliminatorias cuenta el marcador final con prórroga (los penales solo definen quién pasa, no tu marcador).</li>
-              <li>🔐 Tu PIN inicial es <strong>2026</strong> (sí, el año del Mundial, qué creatividad la nuestra 😅)… y es el mismo de TODO el barrio. Por eso te lo hacemos cambiar ya mismo 🕵️.</li>
-              <li>🏠 Tu casa también compite: en Posiciones está la <strong>guerra de casas</strong> — la suma de puntos de todos los de tu casa. Que no digan que en la tuya no ven fútbol.</li>
-              <li>🏆 El que gana se lleva la gloria (y lo que diga la junta de la natillera). El último… que vaya pensando el sancocho 😂</li>
+        <div className="px-[18px] space-y-3 pt-1">
+          <div className="card">
+            <p className="display text-lg uppercase mb-2">📜 Las reglas (después no valen reclamos)</p>
+            <ol className="space-y-2.5 text-[13px] font-bold leading-snug">
+              <li>🔮 Pronostica el marcador de los <b>104 partidos</b>. Cámbialo las veces que quieras… <b>hasta que pite el árbitro</b>. Después ni llorando, ni con tutela, ni “se me cayó el internet”.</li>
+              <li>🎯 Marcador exacto = <b style={{ color: 'var(--green)' }}>{p.scoring.exact} pts</b> · ✔️ acertar quién gana (o empate) = <b style={{ color: 'var(--green)' }}>{p.scoring.outcome} pts</b>.</li>
+              <li>📈 Entre más avanza, más vale: 16avos <b>×2</b>, octavos <b>×3</b>, cuartos <b>×4</b>, semis <b>×5</b>, final <b>×6</b>. Un exacto en la final son <b style={{ color: 'var(--red)' }}>{p.scoring.exact * 6} puntazos</b>.</li>
+              <li>💰 Antes del pitazo inicial ({p.openerLabel}, hora Col) eliges tus <b>2 finalistas (+{p.scoring.finalist_bonus} c/u)</b> y tu <b>campeón (+{p.scoring.champion_bonus})</b>.</li>
+              <li>📊 La tabla se actualiza solita. En eliminatorias cuenta el marcador con prórroga (los penales solo dicen quién pasa).</li>
+              <li>🔐 Tu PIN inicial es <b>2026</b> — el mismo de TODO el barrio. Cámbialo ya mismo 🕵️.</li>
+              <li>🏠 Tu casa también compite en la <b>guerra de casas</b>: tus puntos suman pa’ la tuya.</li>
+              <li>🐷 El último del Mundial pone el <b>guaro</b> y el <b>cerdo de la porcícola</b>. Quedas avisado.</li>
             </ol>
           </div>
-
-          <button onClick={next} className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 transition">
-            {pinDone && !needsPicks ? '¡A pronosticar! ⚽' : 'Listo, me las sé 👌'}
+          <button className="btn red" onClick={next}>
+            {pinDone && !needsPicks ? '¡A PRONOSTICAR! ⚽' : 'LISTO, ME LAS SÉ 👌'}
           </button>
         </div>
       )}
@@ -104,9 +81,10 @@ export default function WelcomeWizard(p: Props) {
       {step === 'pin' && <PinStep onDone={() => { setPinDone(true); next() }} />}
 
       {step === 'picks' && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
-          <h2 className="font-bold mb-1">💰 Las apuestas grandes</h2>
-          <p className="text-xs text-slate-400 mb-4">Sin esto no puedes empezar a pronosticar. Piénsalo bien… o no, igual nadie acierta 😄</p>
+        <div className="pt-1">
+          <p className="px-[18px] pb-3 text-xs font-bold" style={{ color: 'var(--muted)' }}>
+            Sin esto no arrancas. Piénsalo bien… o no, igual nadie acierta 😄
+          </p>
           <PicksEditor
             initial={p.picks}
             locked={p.picksLocked}
@@ -116,6 +94,7 @@ export default function WelcomeWizard(p: Props) {
           />
         </div>
       )}
+      <div className="spacer" />
     </div>
   )
 }
@@ -142,27 +121,27 @@ function PinStep({ onDone }: { onDone: () => void }) {
       maxLength={4}
       value={v}
       placeholder={ph}
-      onChange={(e) => { set(e.target.value); setError('') }}
-      className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2.5 text-white tracking-[0.5em] text-center focus:outline-none focus:border-emerald-500"
+      onChange={(e) => { set(e.target.value.replace(/\D/g, '')); setError('') }}
+      className="input text-center"
+      style={{ letterSpacing: '0.5em', fontFamily: 'var(--font-anton)', fontSize: 24 }}
     />
   )
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
-      <h2 className="font-bold">🔐 Cambia tu PIN</h2>
-      <p className="text-sm text-slate-400">
-        Tu PIN actual es <strong>2026</strong>, el mismo de todos tus vecinos. Y tus vecinos son capaces de entrar
-        y pronosticar por ti un Colombia 0 – 5 Uzbekistán 💀. Pon uno nuevo de 4 dígitos, solo tuyo:
-      </p>
-      {input(pin, setPin, 'Nuevo PIN')}
-      {input(confirm, setConfirm, 'Repítelo')}
-      {error && <p className="text-red-400 text-sm">{error}</p>}
-      <button
-        onClick={submit}
-        disabled={pending || pin.length !== 4 || confirm.length !== 4}
-        className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-semibold py-2.5 transition"
-      >
-        {pending ? 'Guardando…' : 'Guardar mi PIN nuevo'}
+    <div className="px-[18px] pt-1 space-y-3">
+      <div className="card space-y-3">
+        <p className="display text-lg uppercase">🔐 Cambia tu PIN</p>
+        <p className="text-[13px] font-bold leading-snug" style={{ color: 'var(--muted)' }}>
+          Tu PIN es <b style={{ color: 'var(--ink)' }}>2026</b>, igual que el de todos tus vecinos. Y tus vecinos son
+          capaces de entrar y pronosticarte un <b style={{ color: 'var(--red)' }}>Colombia 0–5 Uzbekistán</b> 💀. Pon
+          uno nuevo, solo tuyo:
+        </p>
+        {input(pin, setPin, 'Nuevo PIN')}
+        {input(confirm, setConfirm, 'Repítelo')}
+        {error && <p className="text-sm font-bold" style={{ color: 'var(--red-d)' }}>{error}</p>}
+      </div>
+      <button className="btn green" onClick={submit} disabled={pending || pin.length !== 4 || confirm.length !== 4}>
+        {pending ? 'GUARDANDO…' : 'GUARDAR MI PIN NUEVO 🔒'}
       </button>
     </div>
   )
