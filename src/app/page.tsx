@@ -5,7 +5,7 @@ import MatchCard from '@/components/MatchCard'
 import { adminDb, type Match } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { ROUND_LABEL, type Scoring } from '@/lib/scoring'
-import { formatKickoff } from '@/lib/teams'
+import { formatKickoff, teamLabel } from '@/lib/teams'
 import { syncResults } from '@/lib/sync'
 import {
   dayChipLabel, dayKey, dayLongLabel, dayMonthLabel, FIFA_URL, groupByDay, tvColombia, weekOf,
@@ -21,7 +21,7 @@ const ROUND_CHIP: Record<number, string> = {
 export default async function FixturePage({
   searchParams,
 }: {
-  searchParams: Promise<{ vista?: string; dia?: string; semana?: string; ronda?: string }>
+  searchParams: Promise<{ vista?: string; dia?: string; semana?: string; ronda?: string; grupo?: string }>
 }) {
   const session = await getSession()
   if (!session) redirect('/login')
@@ -60,7 +60,8 @@ export default async function FixturePage({
     allDays[allDays.length - 1]?.key
 
   const params = await searchParams
-  const vista = ['dia', 'semana', 'fase'].includes(params.vista ?? '') ? params.vista! : 'dia'
+  const vista = ['dia', 'semana', 'fase', 'grupo'].includes(params.vista ?? '') ? params.vista! : 'dia'
+  const GROUPS = 'ABCDEFGHIJKL'.split('')
 
   let shownDays: { key: string; matches: Match[] }[] = []
   let title = ''
@@ -73,6 +74,14 @@ export default async function FixturePage({
     title = ROUND_LABEL[round]
     const mult = round === 8 ? scoring.multipliers['8'] : (scoring?.multipliers?.[String(round)] ?? 1)
     subtitle = `Exacto ${scoring.exact * mult} pts · Solo resultado ${scoring.outcome * mult} pts${round === 8 ? ` · La final vale ${scoring.exact * scoring.final_multiplier}/${scoring.outcome * scoring.final_multiplier}` : ''}`
+  } else if (vista === 'grupo') {
+    // Grupo K por defecto: ahí juega la Tricolor 🇨🇴
+    const grupo = GROUPS.includes(params.grupo ?? '') ? params.grupo! : 'K'
+    const ms = all.filter((m) => m.group_name === grupo)
+    shownDays = groupByDay(ms)
+    const teams = [...new Set(ms.flatMap((m) => [m.home_team, m.away_team]))]
+    title = `Grupo ${grupo}`
+    subtitle = teams.map((t) => teamLabel(t)).join(' · ')
   } else if (vista === 'semana') {
     const totalWeeks = weekOf(allDays[allDays.length - 1].key, firstDay)
     const currentWeek = Math.min(totalWeeks, Math.max(1, Number(params.semana) || weekOf(defaultDay ?? firstDay, firstDay)))
@@ -116,9 +125,10 @@ export default async function FixturePage({
       <Nav session={session} active="fixture" />
       <main className="max-w-3xl mx-auto px-4 py-6 space-y-5">
         {/* Modos de navegación */}
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
           {modeChip('dia', '📅 Por día')}
           {modeChip('semana', '🗓️ Por semana')}
+          {modeChip('grupo', '🔠 Por grupo')}
           {modeChip('fase', '🏟️ Por fase')}
         </div>
 
@@ -166,6 +176,25 @@ export default async function FixturePage({
                 Semana {w}
               </Link>
             ))}
+          </div>
+        )}
+
+        {vista === 'grupo' && (
+          <div className="flex gap-1 overflow-x-auto pb-1">
+            {GROUPS.map((g) => {
+              const active = (GROUPS.includes(params.grupo ?? '') ? params.grupo : 'K') === g
+              return (
+                <Link
+                  key={g}
+                  href={`/?vista=grupo&grupo=${g}`}
+                  className={`shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-sm font-bold transition ${
+                    active ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-600'
+                  }`}
+                >
+                  {g === 'K' ? '🇨🇴' : g}
+                </Link>
+              )
+            })}
           </div>
         )}
 

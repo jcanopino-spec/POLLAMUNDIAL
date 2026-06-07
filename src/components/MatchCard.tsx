@@ -22,28 +22,44 @@ type Props = {
 }
 
 export default function MatchCard(p: Props) {
-  const [home, setHome] = useState(p.initialHome?.toString() ?? '')
-  const [away, setAway] = useState(p.initialAway?.toString() ?? '')
-  const [saved, setSaved] = useState<'idle' | 'saved' | 'error'>('idle')
-  const [errorMsg, setErrorMsg] = useState('')
+  const [saved, setSaved] = useState<{ home: string; away: string } | null>(
+    p.initialHome != null ? { home: String(p.initialHome), away: String(p.initialAway ?? '') } : null
+  )
+  const [home, setHome] = useState(saved?.home ?? '')
+  const [away, setAway] = useState(saved?.away ?? '')
+  // Sin pronóstico guardado → directo en modo edición; con uno → modo lectura con ✏️
+  const [editing, setEditing] = useState(saved == null)
+  const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
 
-  const dirty =
-    home !== (p.initialHome?.toString() ?? '') || away !== (p.initialAway?.toString() ?? '')
   const complete = home !== '' && away !== ''
 
   function save() {
-    if (!complete || !dirty || p.locked) return
+    if (!complete || p.locked || pending) return
     startTransition(async () => {
       const res = await savePrediction(p.matchId, Number(home), Number(away))
       if (res?.error) {
-        setSaved('error')
-        setErrorMsg(res.error)
+        setMsg({ text: res.error })
       } else {
-        setSaved('saved')
-        setErrorMsg('')
+        setSaved({ home, away })
+        setEditing(false)
+        setMsg({ ok: true, text: '✓ Guardado' })
       }
     })
+  }
+
+  function startEdit() {
+    if (p.locked) return
+    setMsg(null)
+    setEditing(true)
+  }
+
+  function cancelEdit() {
+    if (!saved) return
+    setHome(saved.home)
+    setAway(saved.away)
+    setMsg(null)
+    setEditing(false)
   }
 
   const scoreInput = (value: string, set: (v: string) => void, label: string) => (
@@ -54,13 +70,17 @@ export default function MatchCard(p: Props) {
       max={99}
       value={value}
       aria-label={label}
-      disabled={p.locked}
+      disabled={p.locked || !editing}
       onChange={(e) => {
         set(e.target.value)
-        setSaved('idle')
+        setMsg(null)
       }}
-      onBlur={save}
-      className="w-12 h-10 text-center rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40 disabled:bg-slate-900 focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+      onKeyDown={(e) => e.key === 'Enter' && save()}
+      className={`w-12 h-10 text-center rounded-lg border font-bold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+        editing && !p.locked
+          ? 'bg-slate-800 border-emerald-600/70 text-white focus:border-emerald-400'
+          : 'bg-slate-900 border-slate-800 text-slate-300'
+      }`}
     />
   )
 
@@ -76,7 +96,7 @@ export default function MatchCard(p: Props) {
             {p.points > 0 ? `+${p.points} pts` : '0 pts'}
           </span>
         )}
-        {p.locked && p.status === 'scheduled' && <span>🔒</span>}
+        {p.locked && p.status === 'scheduled' && <span title="Ya pitó el árbitro: cerrado">🔒</span>}
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
@@ -89,6 +109,42 @@ export default function MatchCard(p: Props) {
         <span className="text-sm font-medium truncate">{teamLabel(p.away)}</span>
       </div>
 
+      {/* Acciones: ✏️ modificar / 💾 guardar (solo mientras no inicie el partido) */}
+      {!p.locked && (
+        <div className="flex items-center justify-center gap-2 mt-2">
+          {editing ? (
+            <>
+              <button
+                onClick={save}
+                disabled={pending || !complete}
+                title="Guardar pronóstico"
+                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 transition"
+              >
+                💾 {pending ? 'Guardando…' : 'Guardar'}
+              </button>
+              {saved && (
+                <button
+                  onClick={cancelEdit}
+                  disabled={pending}
+                  title="Cancelar cambios"
+                  className="rounded-lg border border-slate-700 text-slate-400 hover:text-white text-xs px-3 py-1.5 transition"
+                >
+                  ✕ Cancelar
+                </button>
+              )}
+            </>
+          ) : (
+            <button
+              onClick={startEdit}
+              title="Modificar pronóstico"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-emerald-300 text-xs font-semibold px-3 py-1.5 transition"
+            >
+              ✏️ Modificar
+            </button>
+          )}
+        </div>
+      )}
+
       {p.status === 'finished' && (
         <p className="text-center text-xs text-slate-400 mt-2">
           Resultado real: <span className="text-white font-bold">{p.actualHome} – {p.actualAway}</span>
@@ -99,12 +155,10 @@ export default function MatchCard(p: Props) {
         {p.venue && <>🏟️ {p.venue} · </>}📺 {p.tv}
       </p>
 
-      <div className="h-4 mt-1 text-center text-xs">
-        {pending && <span className="text-slate-400">Guardando…</span>}
-        {!pending && saved === 'saved' && <span className="text-emerald-400">✓ Pronóstico guardado</span>}
-        {!pending && saved === 'error' && <span className="text-red-400">{errorMsg}</span>}
-        {!pending && saved === 'idle' && dirty && complete && !p.locked && (
-          <button onClick={save} className="text-emerald-400 underline">Guardar</button>
+      <div className="h-4 mt-0.5 text-center text-xs">
+        {msg && <span className={msg.ok ? 'text-emerald-400' : 'text-red-400'}>{msg.text}</span>}
+        {!msg && !p.locked && !editing && saved && (
+          <span className="text-slate-500">Tu pronóstico: {saved.home} – {saved.away} (puedes modificarlo hasta el pitazo)</span>
         )}
       </div>
     </div>
