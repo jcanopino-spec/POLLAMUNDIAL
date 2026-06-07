@@ -116,6 +116,84 @@ export function ParticipantsAdmin({ participants, myId }: { participants: Partic
   )
 }
 
+// Avance de pronósticos por vecino: para recordarles y cazar morosos
+export type ProgressRow = {
+  id: string
+  display: string
+  house: string | null
+  neverEntered: boolean
+  noPicks: boolean
+  filledFuture: number
+  totalFuture: number
+  filledAll: number
+}
+
+export function ProgressAdmin({ rows, totalMatches }: { rows: ProgressRow[]; totalMatches: number }) {
+  const [copied, setCopied] = useState(false)
+  const morosos = rows.filter((r) => r.neverEntered || r.filledFuture < r.totalFuture)
+  const alDia = rows.length - morosos.length
+
+  function copiar() {
+    const lines = morosos.map((r) =>
+      r.neverEntered
+        ? `😴 ${r.display}: ¡ni ha entrado a la app!`
+        : `⏰ ${r.display}: le faltan ${r.totalFuture - r.filledFuture} pronóstico(s)${r.noPicks ? ' y el campeón 👑' : ''}`
+    )
+    const txt = `🐔⚽ LA POLLA DE ALAMEDA — reporte de morosos:\n\n${lines.join('\n')}\n\n¡Pilas que los partidos se cierran al pitazo! 👉 pollamundialnatillera.vercel.app`
+    navigator.clipboard.writeText(txt).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  return (
+    <section className="card mx-[18px] mb-4">
+      <p className="display text-lg uppercase">Avance de pronósticos</p>
+      <p className="text-xs font-bold mb-3" style={{ color: 'var(--muted)' }}>
+        {alDia} al día ✅ · {morosos.length} en mora ⏰ — de {rows.length} vecinos. Partidos por jugar: {rows[0]?.totalFuture ?? 0}.
+      </p>
+
+      {morosos.length > 0 && (
+        <button className="savebtn mb-3" style={{ background: 'var(--red)' }} onClick={copiar}>
+          {copied ? '✓ COPIADO — PÉGALO EN WHATSAPP' : '📋 COPIAR LISTA DE MOROSOS'}
+        </button>
+      )}
+
+      <ul className="space-y-2">
+        {rows.map((r) => {
+          const pending = r.totalFuture - r.filledFuture
+          const pct = r.totalFuture ? Math.round((r.filledFuture / r.totalFuture) * 100) : 0
+          return (
+            <li key={r.id} className="rounded-xl px-3 py-2" style={{ border: '2px solid var(--ink)', background: r.neverEntered ? '#FCE0DC' : pending === 0 ? '#E3F4E9' : 'var(--cream)' }}>
+              <div className="flex items-center gap-2">
+                <div className="av" style={{ width: 30, height: 30, fontSize: 16 }}>{avatarFor(r.display)}</div>
+                <span className="flex-1 text-[13px] font-extrabold min-w-0 truncate">
+                  {r.display}
+                  {r.house && <span className="text-[10px] font-bold" style={{ color: 'var(--blue)' }}> 🏠{r.house}</span>}
+                </span>
+                <span className="text-[11px] font-extrabold whitespace-nowrap">
+                  {r.neverEntered ? '😴 ni ha entrado' : pending === 0 ? '✅ al día' : `⏰ faltan ${pending}`}
+                  {!r.neverEntered && r.noPicks && ' · sin 👑'}
+                </span>
+              </div>
+              {!r.neverEntered && (
+                <div className="mt-1.5 flex items-center gap-2">
+                  <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ border: '1.5px solid var(--ink)', background: '#fff' }}>
+                    <div className="h-full" style={{ width: `${pct}%`, background: pending === 0 ? 'var(--green)' : 'var(--yellow)' }} />
+                  </div>
+                  <span className="text-[10px] font-extrabold" style={{ color: 'var(--muted)' }}>
+                    {r.filledFuture}/{r.totalFuture} · {r.filledAll}/{totalMatches} total
+                  </span>
+                </div>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
 export function ResultsAdmin({ matches }: { matches: MatchOption[] }) {
   const [state, action, pending] = useActionState(setManualResult, null)
 
