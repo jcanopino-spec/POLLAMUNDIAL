@@ -6,7 +6,9 @@ create table if not exists participants (
   name text not null unique,
   pin_hash text not null,
   is_admin boolean not null default false,
-  must_change_pin boolean not null default true, -- PIN inicial = número de casa; se cambia en el primer ingreso
+  must_change_pin boolean not null default true, -- PIN inicial genérico 2026; se cambia en el primer ingreso
+  house_number text,                          -- casa del vecino (para la guerra de casas)
+  nickname text,                              -- apodo
   champion_team text,                         -- bono: campeón elegido antes del partido inaugural
   finalist1 text,                             -- bono: los dos equipos que llegan a la final
   finalist2 text,

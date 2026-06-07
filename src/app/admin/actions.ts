@@ -6,7 +6,8 @@ import { adminDb } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { recomputePoints, syncResults } from '@/lib/sync'
 
-const MAX_PARTICIPANTS = 25
+const MAX_PARTICIPANTS = 100
+const PIN_GENERICO = '2026'
 
 async function requireAdmin() {
   const session = await getSession()
@@ -14,13 +15,16 @@ async function requireAdmin() {
   return session
 }
 
+// Alta de vecino: nombre + casa + apodo. Todos arrancan con el PIN genérico 2026
+// y la app los obliga a cambiarlo en el primer ingreso.
 export async function createParticipant(_prev: unknown, formData: FormData) {
   await requireAdmin()
   const name = String(formData.get('name') ?? '').trim()
-  const pin = String(formData.get('pin') ?? '').trim()
+  const house = String(formData.get('house') ?? '').trim()
+  const nickname = String(formData.get('nickname') ?? '').trim()
   const isAdmin = formData.get('is_admin') === 'on'
   if (!name) return { error: 'El nombre es obligatorio.' }
-  if (!/^\d{4}$/.test(pin)) return { error: 'El PIN debe ser de 4 dígitos.' }
+  if (!house) return { error: 'El número de casa es obligatorio (es para la guerra de casas 🏠).' }
 
   const db = adminDb()
   const { count } = await db.from('participants').select('id', { count: 'exact', head: true })
@@ -28,23 +32,38 @@ export async function createParticipant(_prev: unknown, formData: FormData) {
 
   const { error } = await db.from('participants').insert({
     name,
-    pin_hash: await bcrypt.hash(pin, 10),
+    house_number: house,
+    nickname: nickname || null,
+    pin_hash: await bcrypt.hash(PIN_GENERICO, 10),
     is_admin: isAdmin,
   })
   if (error) return { error: error.code === '23505' ? 'Ya existe un participante con ese nombre.' : 'Error al crear.' }
   revalidatePath('/admin')
-  return { ok: `${name} creado.` }
+  return { ok: `${name}${nickname ? ` "${nickname}"` : ''} (casa ${house}) creado. PIN inicial: ${PIN_GENERICO}.` }
 }
 
-export async function resetPin(participantId: string, pin: string) {
+// Restablece al PIN genérico 2026 y vuelve a exigir el cambio.
+export async function resetPin(participantId: string) {
   await requireAdmin()
-  if (!/^\d{4}$/.test(pin)) return { error: 'El PIN debe ser de 4 dígitos.' }
   const db = adminDb()
   const { error } = await db
     .from('participants')
-    .update({ pin_hash: await bcrypt.hash(pin, 10), must_change_pin: true })
+    .update({ pin_hash: await bcrypt.hash(PIN_GENERICO, 10), must_change_pin: true })
     .eq('id', participantId)
-  if (error) return { error: 'Error al actualizar el PIN.' }
+  if (error) return { error: 'Error al restablecer el PIN.' }
+  revalidatePath('/admin')
+  return { ok: true }
+}
+
+export async function updateParticipantInfo(participantId: string, house: string, nickname: string) {
+  await requireAdmin()
+  if (!house.trim()) return { error: 'El número de casa es obligatorio.' }
+  const db = adminDb()
+  const { error } = await db
+    .from('participants')
+    .update({ house_number: house.trim(), nickname: nickname.trim() || null })
+    .eq('id', participantId)
+  if (error) return { error: 'Error al actualizar.' }
   revalidatePath('/admin')
   return { ok: true }
 }

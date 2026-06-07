@@ -89,7 +89,8 @@ export default function WelcomeWizard(p: Props) {
               <li>📈 Entre más avanza el Mundial, más vale el acierto: 16avos <strong>×2</strong>, octavos <strong>×3</strong>, cuartos <strong>×4</strong>, semis <strong>×5</strong> y la final <strong>×6</strong>. Un exacto en la final son <strong>{p.scoring.exact * 6} puntazos</strong>.</li>
               <li>💰 Antes del pitazo inicial ({p.openerLabel}, hora colombiana) eliges tus <strong>2 finalistas ({p.scoring.finalist_bonus} pts cada uno)</strong> y de esos dos, tu <strong>campeón ({p.scoring.champion_bonus} pts)</strong>.</li>
               <li>📊 La tabla de posiciones se actualiza solita al terminar cada partido. En eliminatorias cuenta el marcador final con prórroga (los penales solo definen quién pasa, no tu marcador).</li>
-              <li>🏠 Tu PIN inicial es <strong>el número de tu casa</strong>… o sea que medio barrio lo conoce. Por eso te lo hacemos cambiar ya mismo 🕵️.</li>
+              <li>🔐 Tu PIN inicial es <strong>2026</strong> (sí, el año del Mundial, qué creatividad la nuestra 😅)… y es el mismo de TODO el barrio. Por eso te lo hacemos cambiar ya mismo 🕵️.</li>
+              <li>🏠 Tu casa también compite: en Posiciones está la <strong>guerra de casas</strong> — la suma de puntos de todos los de tu casa. Que no digan que en la tuya no ven fútbol.</li>
               <li>🏆 El que gana se lleva la gloria (y lo que diga la junta de la natillera). El último… que vaya pensando el sancocho 😂</li>
             </ol>
           </div>
@@ -150,8 +151,8 @@ function PinStep({ onDone }: { onDone: () => void }) {
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
       <h2 className="font-bold">🔐 Cambia tu PIN</h2>
       <p className="text-sm text-slate-400">
-        Tu PIN actual es el número de tu casa. Tus vecinos también juegan esta polla… y son capaces de pronosticar
-        por ti un Colombia 0 – 5 Uzbekistán 💀. Pon uno nuevo de 4 dígitos:
+        Tu PIN actual es <strong>2026</strong>, el mismo de todos tus vecinos. Y tus vecinos son capaces de entrar
+        y pronosticar por ti un Colombia 0 – 5 Uzbekistán 💀. Pon uno nuevo de 4 dígitos, solo tuyo:
       </p>
       {input(pin, setPin, 'Nuevo PIN')}
       {input(confirm, setConfirm, 'Repítelo')}

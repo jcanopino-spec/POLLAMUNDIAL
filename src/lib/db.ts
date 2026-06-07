@@ -34,6 +34,8 @@ export type Participant = {
   name: string
   is_admin: boolean
   must_change_pin: boolean
+  house_number: string | null
+  nickname: string | null
   champion_team: string | null
   finalist1: string | null
   finalist2: string | null

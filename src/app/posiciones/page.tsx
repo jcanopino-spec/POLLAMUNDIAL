@@ -17,7 +17,7 @@ export default async function PosicionesPage() {
   const db = adminDb()
   const [{ data: participants }, { data: preds }, { data: finished }, { data: cfg }, { data: final }] =
     await Promise.all([
-      db.from('participants').select('id, name, is_admin, champion_team, finalist1, finalist2'),
+      db.from('participants').select('id, name, is_admin, champion_team, finalist1, finalist2, house_number, nickname'),
       db.from('predictions').select('participant_id, match_id, home_score, away_score, points').not('points', 'is', null),
       db.from('matches').select('id, home_score, away_score').eq('status', 'finished'),
       db.from('settings').select('value').eq('key', 'scoring').single(),
@@ -48,6 +48,20 @@ export default async function PosicionesPage() {
   })
 
   rows.sort((a, b) => b.total - a.total || b.exact - a.exact || a.name.localeCompare(b.name))
+
+  // 🏠 Guerra de casas: suma de los puntos de todos los habitantes
+  const houseMap = new Map<string, { total: number; members: typeof rows }>()
+  for (const r of rows) {
+    const key = r.house_number?.trim() || null
+    if (!key) continue
+    const h = houseMap.get(key) ?? { total: 0, members: [] as typeof rows }
+    h.total += r.total
+    h.members.push(r)
+    houseMap.set(key, h)
+  }
+  const houses = [...houseMap.entries()]
+    .map(([house, h]) => ({ house, ...h, avg: h.total / h.members.length }))
+    .sort((a, b) => b.total - a.total || b.avg - a.avg)
 
   const medal = (i: number) => (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`)
   const played = actual.size
@@ -106,6 +120,8 @@ export default async function PosicionesPage() {
                   <td className="px-3 py-2.5 font-semibold">{medal(i)}</td>
                   <td className="px-2 py-2.5 font-medium">
                     {r.name}
+                    {r.nickname && <span className="text-slate-400 italic text-xs"> “{r.nickname}”</span>}
+                    {r.house_number && <span className="text-sky-400/80 text-[10px] ml-1">🏠{r.house_number}</span>}
                     {r.id === session.id && <span className="text-emerald-400 text-xs ml-1">(tú)</span>}
                   </td>
                   <td className="px-2 py-2.5 text-center text-emerald-300">{r.exact}</td>
@@ -133,6 +149,62 @@ export default async function PosicionesPage() {
           👑 campeón ({scoring?.champion_bonus ?? 30} pts) · La tabla se actualiza solita al terminar cada partido.
           Maple 🫎, Zayu 🐆 y Clutch 🦅 no aceptan sobornos.
         </p>
+
+        {/* 🏠 Guerra de casas */}
+        {houses.length >= 2 && (
+          <section className="mt-8">
+            <h2 className="text-lg font-extrabold bg-gradient-to-r from-sky-300 via-emerald-300 to-amber-300 bg-clip-text text-transparent mb-1">
+              🏠 La guerra de casas
+            </h2>
+            <p className="text-xs text-slate-400 mb-3">
+              Aquí no se salva nadie: los puntos de cada vecino suman para su casa. Honor para una… y sancocho para otra.
+            </p>
+            <div className="space-y-2">
+              {houses.map((h, i) => {
+                const first = i === 0
+                const last = i === houses.length - 1
+                return (
+                  <div
+                    key={h.house}
+                    className={`rounded-xl border p-3 flex items-center gap-3 ${
+                      first
+                        ? 'border-amber-400/60 bg-gradient-to-r from-amber-950/40 to-slate-900/60 glow-gold'
+                        : last
+                          ? 'border-rose-800/60 bg-rose-950/20'
+                          : 'border-slate-800 bg-slate-900/50'
+                    }`}
+                  >
+                    <span className="text-2xl shrink-0">{first ? '👑' : last ? '🥄' : '🏠'}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold">
+                        Casa {h.house}
+                        <span className="text-xs font-normal text-slate-400 ml-2">
+                          {first
+                            ? '— aquí SÍ se ve fútbol 🔥'
+                            : last
+                              ? '— van pagando el sancocho 🍲'
+                              : ''}
+                        </span>
+                      </p>
+                      <p className="text-xs text-slate-400 truncate">
+                        {h.members.map((m) => m.nickname || m.name).join(' · ')}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-extrabold text-lg">{h.total} pts</p>
+                      <p className="text-[10px] text-slate-500">
+                        {h.members.length} jugador(es) · prom. {h.avg.toFixed(1)}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <p className="text-[11px] text-slate-600 mt-2">
+              * Se suma el total de cada habitante. Casa que invita más gente, suma más… así que recluten 😏
+            </p>
+          </section>
+        )}
       </main>
     </div>
   )

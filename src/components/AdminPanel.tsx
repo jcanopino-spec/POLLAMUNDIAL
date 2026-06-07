@@ -7,10 +7,18 @@ import {
   forceSyncNow,
   resetPin,
   setManualResult,
+  updateParticipantInfo,
 } from '@/app/admin/actions'
 import { teamLabel } from '@/lib/teams'
 
-type ParticipantRow = { id: string; name: string; is_admin: boolean; champion_team: string | null }
+type ParticipantRow = {
+  id: string
+  name: string
+  is_admin: boolean
+  champion_team: string | null
+  house_number: string | null
+  nickname: string | null
+}
 type MatchOption = { id: number; home_team: string; away_team: string; kickoffLabel: string; status: string }
 
 const inputCls =
@@ -23,20 +31,22 @@ export function ParticipantsAdmin({ participants, myId }: { participants: Partic
 
   return (
     <section className="rounded-xl border border-slate-800 p-4">
-      <h2 className="font-semibold mb-1">Participantes ({participants.length}/25)</h2>
+      <h2 className="font-semibold mb-1">Participantes ({participants.length}/100)</h2>
       <p className="text-xs text-slate-500 mb-3">
-        PIN inicial = <strong>número de la casa</strong> (4 dígitos, ej. casa 17 → 0017). Al entrar por primera
-        vez, la app los obliga a cambiarlo y a elegir sus finalistas y campeón.
+        Todos arrancan con el PIN genérico <strong className="text-emerald-400">2026</strong>; al entrar por
+        primera vez la app los obliga a cambiarlo y a elegir sus finalistas y campeón. La casa alimenta la
+        <strong> guerra de casas 🏠</strong> en Posiciones.
       </p>
 
       <form action={action} className="flex flex-wrap gap-2 mb-4">
         <input name="name" placeholder="Nombre" required className={`${inputCls} flex-1 min-w-32`} />
-        <input name="pin" placeholder="Casa #" inputMode="numeric" pattern="\d{4}" maxLength={4} required className={`${inputCls} w-20 text-center`} />
+        <input name="house" placeholder="Casa #" required className={`${inputCls} w-20 text-center`} />
+        <input name="nickname" placeholder="Apodo (opcional)" className={`${inputCls} flex-1 min-w-28`} />
         <label className="flex items-center gap-1.5 text-xs text-slate-400">
           <input type="checkbox" name="is_admin" className="accent-emerald-600" /> admin
         </label>
-        <button disabled={pending} className="rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-4 py-2 text-sm font-semibold">
-          {pending ? 'Creando…' : 'Crear'}
+        <button disabled={pending} className="rounded-lg bg-gradient-to-r from-emerald-600 to-sky-600 hover:from-emerald-500 hover:to-sky-500 disabled:opacity-50 px-4 py-2 text-sm font-semibold">
+          {pending ? 'Creando…' : 'Crear (PIN 2026)'}
         </button>
       </form>
       {state && 'error' in state && state.error && <p className="text-red-400 text-xs mb-3">{state.error}</p>}
@@ -48,21 +58,37 @@ export function ParticipantsAdmin({ participants, myId }: { participants: Partic
           <li key={p.id} className="py-2 flex items-center gap-2">
             <span className="flex-1">
               {p.name}
+              {p.nickname && <span className="text-slate-400 italic"> “{p.nickname}”</span>}
+              {p.house_number && <span className="text-xs text-sky-400 ml-2">🏠 {p.house_number}</span>}
               {p.is_admin && <span className="text-[10px] bg-emerald-900 text-emerald-300 rounded px-1.5 py-0.5 ml-2">ADMIN</span>}
             </span>
             <button
               disabled={busy}
               onClick={() => {
-                const pin = prompt(`Nuevo PIN (4 dígitos) para ${p.name}:`)
-                if (!pin) return
+                const house = prompt(`Casa de ${p.name}:`, p.house_number ?? '')
+                if (house == null) return
+                const nickname = prompt(`Apodo de ${p.name} (vacío para quitar):`, p.nickname ?? '') ?? ''
                 startTransition(async () => {
-                  const r = await resetPin(p.id, pin.trim())
-                  setFeedback(r?.error ?? `PIN de ${p.name} actualizado.`)
+                  const r = await updateParticipantInfo(p.id, house, nickname)
+                  setFeedback(r?.error ?? `${p.name} actualizado.`)
                 })
               }}
               className="text-xs text-slate-400 hover:text-white border border-slate-700 rounded px-2 py-1"
             >
-              PIN
+              ✏️
+            </button>
+            <button
+              disabled={busy}
+              onClick={() => {
+                if (!confirm(`¿Restablecer el PIN de ${p.name} a 2026? Tendrá que cambiarlo al entrar.`)) return
+                startTransition(async () => {
+                  const r = await resetPin(p.id)
+                  setFeedback(r?.error ?? `PIN de ${p.name} → 2026.`)
+                })
+              }}
+              className="text-xs text-slate-400 hover:text-white border border-slate-700 rounded px-2 py-1"
+            >
+              PIN→2026
             </button>
             {p.id !== myId && (
               <button

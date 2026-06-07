@@ -29,7 +29,7 @@ export default function LoginPage() {
           </div>
           <div>
             <label htmlFor="pin" className="block text-sm text-slate-300 mb-1">
-              PIN (4 dígitos) <span className="text-slate-500">— si es tu primera vez, es el número de tu casa 🏠</span>
+              PIN (4 dígitos) <span className="text-slate-500">— ¿primera vez? prueba con 2026 🤫</span>
             </label>
             <input
               id="pin" name="pin" type="password" inputMode="numeric" pattern="\d{4}" maxLength={4} required

@@ -14,7 +14,7 @@ export default async function AdminPage() {
 
   const db = adminDb()
   const [{ data: participants }, { data: matches }, { data: sync }] = await Promise.all([
-    db.from('participants').select('id, name, is_admin, champion_team').order('name'),
+    db.from('participants').select('id, name, is_admin, champion_team, house_number, nickname').order('name'),
     db.from('matches').select('id, home_team, away_team, kickoff_utc, status').lte('kickoff_utc', new Date(Date.now() + 24 * 3600 * 1000).toISOString()).order('kickoff_utc', { ascending: false }),
     db.from('settings').select('value').eq('key', 'last_sync').maybeSingle(),
   ])
