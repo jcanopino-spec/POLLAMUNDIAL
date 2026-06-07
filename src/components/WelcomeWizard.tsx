@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { changePin } from '@/app/actions'
 import PicksEditor from '@/components/PicksEditor'
@@ -66,6 +67,7 @@ export default function WelcomeWizard(p: Props) {
               <li>🎯 Marcador exacto = <b style={{ color: 'var(--green)' }}>{p.scoring.exact} pts</b> · ✔️ acertar quién gana (o empate) = <b style={{ color: 'var(--green)' }}>{p.scoring.outcome} pts</b>.</li>
               <li>📈 Entre más avanza, más vale: 16avos <b>×2</b>, octavos <b>×3</b>, cuartos <b>×4</b>, semis <b>×5</b>, final <b>×6</b>. Un exacto en la final son <b style={{ color: 'var(--red)' }}>{p.scoring.exact * 6} puntazos</b>.</li>
               <li>💰 Antes del pitazo inicial ({p.openerLabel}, hora Col) eliges tus <b>2 finalistas (+{p.scoring.finalist_bonus} c/u)</b> y tu <b>campeón (+{p.scoring.champion_bonus})</b>.</li>
+              <li>🔮 ¿No sabes a quién apostarle? Usa el <b>Simulador</b> (pestaña 🔮): armas TU Mundial con el bracket real de la FIFA y compruebas que tu final <b>sí exista</b> — que no te pase que tus finalistas se maten en octavos 😅. Es opcional: si ya lo tienes claro, sáltalo y dale directo a pronosticar.</li>
               <li>📊 La tabla se actualiza solita. En eliminatorias cuenta el marcador con prórroga (los penales solo dicen quién pasa).</li>
               <li>🔐 Tu PIN inicial es <b>2026</b> — el mismo de TODO el barrio. Cámbialo ya mismo 🕵️.</li>
               <li>🏠 Tu casa también compite en la <b>guerra de casas</b>: tus puntos suman pa’ la tuya.</li>
@@ -90,8 +92,19 @@ export default function WelcomeWizard(p: Props) {
 
       {step === 'picks' && (
         <div className="pt-1">
+          {/* Opción: probar primero en el simulador */}
+          <div className="mx-[18px] mb-3 card !p-3" style={{ background: 'var(--cream-2)' }}>
+            <p className="text-[12.5px] font-extrabold">🔮 ¿Todavía no sabes a quién apostarle?</p>
+            <p className="text-[11px] font-bold mt-0.5 mb-2" style={{ color: 'var(--muted)' }}>
+              Prueba primero el <b>Simulador</b>: arma tu Mundial con el bracket real y verifica que tu final
+              sí exista. Tus apuestas te esperan aquí cuando vuelvas.
+            </p>
+            <Link href="/simulador" className="savebtn block text-center" style={{ background: 'var(--blue)', textDecoration: 'none' }}>
+              🔮 PROBAR EN EL SIMULADOR PRIMERO
+            </Link>
+          </div>
           <p className="px-[18px] pb-3 text-xs font-bold" style={{ color: 'var(--muted)' }}>
-            Sin esto no arrancas. Piénsalo bien… o no, igual nadie acierta 😄
+            …o si ya lo tienes claro, séllala de una. Piénsalo bien… o no, igual nadie acierta 😄
           </p>
           <PicksEditor
             initial={p.picks}

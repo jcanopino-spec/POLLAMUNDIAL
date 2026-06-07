@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { saveSimulation } from '@/app/simulador/actions'
 import {
   EMPTY_SIM, KO, R32, ROUND_OF, THIRD_SLOTS, autoAssignThirds, collisionMatch, resolveBracket, type SimData,
@@ -312,6 +313,21 @@ export default function Simulator({ groups, saved, picks }: Props) {
                 <div className="castigo" style={{ margin: 0, background: verdict.ok ? 'var(--green)' : 'var(--ink)' }}>
                   <div className="big">{verdict.ok ? '🔮' : '🐔'}</div>
                   <div className="t">{verdict.text}</div>
+                </div>
+              )}
+
+              {/* Aún no ha sellado su apuesta grande → mandarlo a sellarla con lo que simuló */}
+              {(!picks.finalist1 || !picks.finalist2) && champion && (
+                <div className="card !p-3 text-center" style={{ background: 'var(--cream-2)' }}>
+                  <p className="text-[12.5px] font-extrabold">
+                    ¿Te convenció esta final? {teamFlag(finalTeams[0]!)} {teamShort(finalTeams[0]!)} vs {teamFlag(finalTeams[1]!)} {teamShort(finalTeams[1]!)} con 👑 {teamShort(champion)}
+                  </p>
+                  <p className="text-[11px] font-bold mt-0.5 mb-2" style={{ color: 'var(--muted)' }}>
+                    Esto fue de mentiras 🔮 — los puntos de verdad se sellan en la apuesta grande, antes del pitazo inicial.
+                  </p>
+                  <Link href="/bienvenida" className="savebtn block text-center" style={{ textDecoration: 'none' }}>
+                    👑 IR A SELLAR MI APUESTA GRANDE
+                  </Link>
                 </div>
               )}
             </>
