@@ -10,6 +10,7 @@ type Props = {
   away: string
   kickoffLabel: string
   venue: string | null
+  tv: string
   locked: boolean
   status: 'scheduled' | 'live' | 'finished'
   actualHome: number | null
@@ -93,6 +94,10 @@ export default function MatchCard(p: Props) {
           Resultado real: <span className="text-white font-bold">{p.actualHome} – {p.actualAway}</span>
         </p>
       )}
+
+      <p className="text-center text-[10px] text-slate-500 mt-1.5 truncate">
+        {p.venue && <>🏟️ {p.venue} · </>}📺 {p.tv}
+      </p>
 
       <div className="h-4 mt-1 text-center text-xs">
         {pending && <span className="text-slate-400">Guardando…</span>}
