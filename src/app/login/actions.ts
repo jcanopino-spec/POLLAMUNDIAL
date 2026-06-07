@@ -22,8 +22,9 @@ export async function login(_prev: { error?: string } | null, formData: FormData
   }
 
   await createSession({ id: p.id, name: p.name, isAdmin: p.is_admin })
-  // Primer ingreso (o picks pendientes) → bienvenida; si no, splash de entrada
-  const needsOnboarding = p.must_change_pin || !p.champion_team || !p.finalist1 || !p.finalist2
+  // Primer ingreso (o picks pendientes) → bienvenida; si no, splash de entrada.
+  // Los admin no participan: no se les exigen apuestas.
+  const needsOnboarding = p.must_change_pin || (!p.is_admin && (!p.champion_team || !p.finalist1 || !p.finalist2))
   redirect(needsOnboarding ? '/bienvenida' : '/?hola=1')
 }
 

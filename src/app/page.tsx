@@ -43,8 +43,9 @@ export default async function FixturePage({
   const now = Date.now()
   const tournamentStarted = !!opener && new Date(opener.kickoff_utc).getTime() <= now
 
-  // Primer ingreso pendiente → a la bienvenida (PIN nuevo y apuestas grandes primero)
-  if (me && (me.must_change_pin || (!tournamentStarted && (!me.champion_team || !me.finalist1 || !me.finalist2)))) {
+  // Primer ingreso pendiente → a la bienvenida (PIN nuevo y apuestas grandes primero).
+  // Los admin no participan: no se les exigen apuestas.
+  if (me && (me.must_change_pin || (!session.isAdmin && !tournamentStarted && (!me.champion_team || !me.finalist1 || !me.finalist2)))) {
     redirect('/bienvenida')
   }
 
