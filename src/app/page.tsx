@@ -7,6 +7,7 @@ import { getSession } from '@/lib/session'
 import { ROUND_LABEL, type Scoring } from '@/lib/scoring'
 import { formatKickoff, teamLabel } from '@/lib/teams'
 import { syncResults } from '@/lib/sync'
+import { Countdown } from '@/components/Fiesta'
 import {
   dayChipLabel, dayKey, dayLongLabel, dayMonthLabel, FIFA_URL, groupByDay, tvColombia, weekOf,
 } from '@/lib/calendar'
@@ -120,10 +121,47 @@ export default async function FixturePage({
     </Link>
   )
 
+  // Héroe: próximo partido (prioridad a la Tricolor si juega hoy)
+  const nextMatch = all.find((m) => new Date(m.kickoff_utc).getTime() > now)
+  const liveCount = all.filter((m) => m.status === 'live').length
+  const colombiaToday = all.find(
+    (m) => dayKey(m.kickoff_utc) === today && (m.home_team === 'Colombia' || m.away_team === 'Colombia')
+  )
+
   return (
     <div className="flex-1">
       <Nav session={session} active="fixture" />
       <main className="max-w-3xl mx-auto px-4 py-6 space-y-5">
+        {/* Héroe de la fiesta */}
+        <div className="rounded-2xl bg-gradient-to-r from-rose-900/50 via-emerald-900/50 to-sky-900/50 border border-emerald-700/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="text-center sm:text-left">
+            <p className="font-extrabold text-lg">
+              <span className="ball-bounce mr-1.5">⚽</span>
+              {colombiaToday
+                ? '¡HOY juega la Tricolor! 🇨🇴🎉'
+                : liveCount > 0
+                  ? `● ${liveCount} partido(s) EN JUEGO ahora mismo`
+                  : nextMatch
+                    ? `Próximo: ${teamLabel(nextMatch.home_team)} vs ${teamLabel(nextMatch.away_team)}`
+                    : '¡Se acabó la fiesta… hasta 2030! 🥲'}
+            </p>
+            {nextMatch && !colombiaToday && liveCount === 0 && (
+              <p className="text-xs text-slate-300 mt-0.5">{formatKickoff(nextMatch.kickoff_utc)} (Col) · {nextMatch.venue}</p>
+            )}
+            {colombiaToday && (
+              <p className="text-xs text-slate-300 mt-0.5">
+                {teamLabel(colombiaToday.home_team)} vs {teamLabel(colombiaToday.away_team)} · {formatKickoff(colombiaToday.kickoff_utc)} (Col) 📺 Caracol · RCN
+              </p>
+            )}
+          </div>
+          {nextMatch && (
+            <Countdown
+              targetIso={new Date(nextMatch.kickoff_utc).toISOString()}
+              label={tournamentStarted ? 'Falta pa’l pitazo' : '¡Arranca el Mundial en…!'}
+            />
+          )}
+        </div>
+
         {/* Modos de navegación */}
         <div className="flex gap-1.5 overflow-x-auto pb-1">
           {modeChip('dia', '📅 Por día')}
@@ -138,6 +176,7 @@ export default async function FixturePage({
             {allDays.map((d) => {
               const pending = pendingByDay.get(d.key) ?? 0
               const isPast = d.key < today
+              const juegaColombia = d.matches.some((m) => m.home_team === 'Colombia' || m.away_team === 'Colombia')
               return (
                 <Link
                   key={d.key}
@@ -150,7 +189,7 @@ export default async function FixturePage({
                         : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-600'
                   }`}
                 >
-                  <span className="capitalize font-semibold">{dayChipLabel(d.key)}</span>
+                  <span className="capitalize font-semibold">{juegaColombia && '🇨🇴 '}{dayChipLabel(d.key)}</span>
                   <span className="text-[10px] text-slate-500 capitalize">{dayMonthLabel(d.key)}</span>
                   {pending > 0 ? (
                     <span className="text-[10px] text-amber-400 font-bold">{pending} ⚠️</span>

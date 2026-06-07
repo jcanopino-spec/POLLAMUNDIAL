@@ -2,13 +2,15 @@
 
 import { useActionState } from 'react'
 import { login } from './actions'
+import { Confetti } from '@/components/Fiesta'
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(login, null)
 
   return (
-    <main className="min-h-dvh flex items-center justify-center bg-gradient-to-b from-emerald-950 to-slate-950 p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-slate-900/80 border border-emerald-800/40 p-8 shadow-2xl">
+    <main className="min-h-dvh flex items-center justify-center p-4 relative">
+      <Confetti />
+      <div className="w-full max-w-sm rounded-2xl bg-slate-900/85 backdrop-blur border border-emerald-700/40 p-8 shadow-2xl shadow-emerald-900/40 relative z-[1]">
         <div className="text-center mb-8">
           <div className="text-4xl mb-2">🫎 🐆 🦅</div>
           <h1 className="text-2xl font-extrabold bg-gradient-to-r from-red-400 via-emerald-400 to-sky-400 bg-clip-text text-transparent">
@@ -37,9 +39,9 @@ export default function LoginPage() {
           {state?.error && <p className="text-red-400 text-sm">{state.error}</p>}
           <button
             disabled={pending}
-            className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold py-2.5 transition"
+            className="w-full rounded-lg bg-gradient-to-r from-emerald-600 to-sky-600 hover:from-emerald-500 hover:to-sky-500 disabled:opacity-50 text-white font-semibold py-2.5 transition shadow-lg shadow-emerald-900/50"
           >
-            {pending ? 'Entrando…' : 'Entrar'}
+            {pending ? 'Entrando…' : '¡A jugar! ⚽'}
           </button>
         </form>
       </div>

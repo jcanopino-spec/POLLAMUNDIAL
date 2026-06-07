@@ -57,9 +57,36 @@ export default async function PosicionesPage() {
       <Nav session={session} active="posiciones" />
       <main className="max-w-3xl mx-auto px-4 py-6">
         <div className="flex items-baseline justify-between mb-4">
-          <h1 className="text-lg font-bold">Tabla de posiciones</h1>
+          <h1 className="text-lg font-extrabold bg-gradient-to-r from-amber-300 via-emerald-300 to-sky-300 bg-clip-text text-transparent">
+            🏆 Tabla de posiciones
+          </h1>
           <span className="text-xs text-slate-400">{played} de 104 partidos jugados</span>
         </div>
+
+        {/* Podio de la natillera */}
+        {rows.length >= 3 && (
+          <div className="grid grid-cols-3 gap-2 items-end mb-5">
+            {[rows[1], rows[0], rows[2]].map((r, i) => {
+              const pos = i === 1 ? 0 : i === 0 ? 1 : 2
+              const alturas = ['h-24', 'h-32', 'h-20']
+              const estilos = [
+                'from-slate-500/30 to-slate-700/30 border-slate-500/50',
+                'from-amber-500/30 to-amber-800/30 border-amber-400/60 glow-gold',
+                'from-orange-700/30 to-orange-900/30 border-orange-600/50',
+              ]
+              return (
+                <div
+                  key={r.id}
+                  className={`${alturas[i]} rounded-t-xl border bg-gradient-to-b ${estilos[i]} flex flex-col items-center justify-end pb-2 px-1`}
+                >
+                  <span className="text-2xl">{['🥈', '🥇', '🥉'][i]}</span>
+                  <span className="text-xs font-bold truncate max-w-full">{r.name}</span>
+                  <span className={`text-sm font-extrabold ${pos === 0 ? 'text-amber-300' : 'text-slate-300'}`}>{r.total} pts</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         <div className="rounded-xl border border-slate-800 overflow-hidden">
           <table className="w-full text-sm">

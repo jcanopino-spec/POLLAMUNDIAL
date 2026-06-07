@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import WelcomeWizard from '@/components/WelcomeWizard'
+import { Confetti } from '@/components/Fiesta'
 import { adminDb } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { type Scoring } from '@/lib/scoring'
@@ -24,7 +25,8 @@ export default async function BienvenidaPage() {
   const picksLocked = !!opener && new Date(opener.kickoff_utc).getTime() <= Date.now()
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 relative">
+      <Confetti density={0.5} />
       <Nav session={session} active="reglas" />
       <WelcomeWizard
         name={session.name}

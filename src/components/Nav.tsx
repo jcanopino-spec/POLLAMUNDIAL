@@ -7,14 +7,16 @@ export default function Nav({ session, active }: { session: Session; active: 'fi
     <Link
       href={href}
       className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
-        active === key ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+        active === key
+          ? 'bg-gradient-to-r from-emerald-500 to-sky-500 text-white shadow-lg shadow-emerald-500/25'
+          : 'text-slate-300 hover:bg-slate-800'
       }`}
     >
       {label}
     </Link>
   )
   return (
-    <header className="sticky top-0 z-10 bg-slate-950/90 backdrop-blur border-b border-slate-800">
+    <header className="sticky top-0 z-10 bg-slate-950/90 backdrop-blur border-b border-transparent [border-image:linear-gradient(to_right,#f43f5e,#10b981,#38bdf8)_1]">
       <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1 overflow-x-auto">
           <span className="text-xl mr-1" title="Maple, Zayu y Clutch te vigilan">🫎🐆🦅</span>

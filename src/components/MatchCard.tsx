@@ -84,8 +84,18 @@ export default function MatchCard(p: Props) {
     />
   )
 
+  const esColombia = p.home === 'Colombia' || p.away === 'Colombia'
+
   return (
-    <div className={`rounded-xl border p-3 ${p.status === 'live' ? 'border-amber-500/60 bg-amber-950/20' : 'border-slate-800 bg-slate-900/60'}`}>
+    <div
+      className={`rounded-xl border p-3 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-900/30 ${
+        p.status === 'live'
+          ? 'border-amber-500/60 bg-amber-950/20'
+          : esColombia
+            ? 'border-yellow-500/50 bg-gradient-to-br from-yellow-950/30 via-blue-950/20 to-red-950/20'
+            : 'border-slate-800 bg-slate-900/60'
+      }`}
+    >
       <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
         <span>
           P{p.matchId} · {p.kickoffLabel} <span className="text-slate-600">(Col)</span>
@@ -93,7 +103,7 @@ export default function MatchCard(p: Props) {
         {p.status === 'live' && <span className="text-amber-400 font-semibold animate-pulse">● EN JUEGO</span>}
         {p.status === 'finished' && p.points != null && (
           <span className={`font-bold ${p.points > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
-            {p.points > 0 ? `+${p.points} pts` : '0 pts'}
+            {p.points >= p.maxExact ? `🎯 ¡EXACTO! +${p.points} pts 🎉` : p.points > 0 ? `✔️ +${p.points} pts` : '0 pts 🫠'}
           </span>
         )}
         {p.locked && p.status === 'scheduled' && <span title="Ya pitó el árbitro: cerrado">🔒</span>}

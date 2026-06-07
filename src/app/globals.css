@@ -1,26 +1,69 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Noche de estadio: del verde cancha al azul gradería */
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(16, 185, 129, 0.18), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 110%, rgba(56, 189, 248, 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 10% 110%, rgba(244, 63, 94, 0.10), transparent),
+    #020617;
+  color: #f1f5f9;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  min-height: 100dvh;
+}
+
+/* 🎊 Confeti que cae (solo CSS, posiciones deterministas) */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-8vh) rotate(0deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(108vh) rotate(540deg);
+    opacity: 0.15;
+  }
+}
+
+.confetti {
+  position: absolute;
+  top: 0;
+  animation: confetti-fall linear infinite;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 🏆 Brillo para el podio y tarjetas destacadas */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.5);
+  }
+}
+
+.glow-gold {
+  animation: glow-pulse 2.6s ease-in-out infinite;
+}
+
+/* ⚽ Balón que rebota suave en el héroe */
+@keyframes ball-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.ball-bounce {
+  display: inline-block;
+  animation: ball-bounce 1.6s ease-in-out infinite;
 }
