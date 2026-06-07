@@ -33,7 +33,8 @@ export default async function PosicionesPage() {
       ? [final.home_team, final.away_team]
       : []
 
-  const rows = ((participants ?? []) as Participant[]).map((p) => {
+  // Los admin (jcanopino) administran, no participan
+  const rows = ((participants ?? []) as Participant[]).filter((p) => !p.is_admin).map((p) => {
     const mine = (preds ?? []).filter((x) => x.participant_id === p.id)
     const matchPoints = mine.reduce((s, x) => s + (x.points ?? 0), 0)
     const exact = mine.filter((x) => {

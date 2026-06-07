@@ -1,13 +1,34 @@
 'use client'
 
-import { useActionState, useRef, useState } from 'react'
-import { login } from './actions'
+import { useActionState, useEffect, useRef, useState } from 'react'
+import { login, lookupName } from './actions'
 import { Confetti } from '@/components/Fiesta'
+import { avatarFor } from '@/lib/avatar'
+
+type Found = { name: string; nickname: string | null; house: string | null; firstTime: boolean }
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(login, null)
+  const [name, setName] = useState('')
+  const [found, setFound] = useState<Found | null>(null)
+  const [searched, setSearched] = useState(false)
   const [pin, setPin] = useState(['', '', '', ''])
   const refs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)]
+
+  // Reconocer al vecino mientras escribe (debounce 400ms)
+  useEffect(() => {
+    setFound(null)
+    setSearched(false)
+    if (name.trim().length < 3) return
+    const t = setTimeout(async () => {
+      const r = await lookupName(name)
+      setFound(r)
+      setSearched(true)
+      if (r) setName(r.name)
+    }, 400)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name])
 
   const setDigit = (i: number, v: string) => {
     const d = v.replace(/\D/g, '').slice(-1)
@@ -31,7 +52,8 @@ export default function LoginPage() {
             <span style={{ background: 'var(--blue)' }} />
           </div>
           <div className="mascot bob">
-            🐔<span className="ball">⚽</span>
+            {found ? avatarFor(found.nickname || found.name) : '🐔'}
+            <span className="ball">⚽</span>
           </div>
           <h1 className="display">
             <span className="a">La</span> <span className="b">Polla</span>
@@ -45,14 +67,52 @@ export default function LoginPage() {
         </div>
 
         <form action={action} className="card m-[18px] !rounded-3xl !border-[3px] !shadow-[0_8px_0_var(--ink)] !p-5">
-          <p className="text-sm font-bold text-center mb-4">
-            La gallina ya hizo su pronóstico 🐔
-            <br />
-            <b style={{ color: 'var(--red)' }}>¿Y tú a qué le tiras?</b>
-          </p>
+          {!found && (
+            <p className="text-sm font-bold text-center mb-4">
+              La gallina ya hizo su pronóstico 🐔
+              <br />
+              <b style={{ color: 'var(--red)' }}>¿Y tú a qué le tiras?</b>
+            </p>
+          )}
+
           <label className="flabel" htmlFor="name">Nombre</label>
-          <input id="name" name="name" className="input" placeholder="¿Cómo te dicen?" autoComplete="username" required />
-          <label className="flabel mt-4" style={{ marginTop: 16 }}>PIN · 4 dígitos</label>
+          <input
+            id="name"
+            name="name"
+            className="input"
+            placeholder="¿Cómo te llamas, vecino?"
+            autoComplete="username"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+
+          {/* Bienvenida al reconocer al vecino */}
+          {found && (
+            <div
+              className="mt-3 rounded-2xl px-3 py-2.5 text-center fade"
+              style={{ border: '2.5px solid var(--ink)', background: 'var(--yellow)' }}
+            >
+              <p className="text-sm font-extrabold">
+                ¡Qué hubo, {found.nickname || found.name}! {avatarFor(found.nickname || found.name)}
+              </p>
+              <p className="text-[11px] font-bold" style={{ color: 'var(--ink)' }}>
+                🏠 Casa {found.house ?? '—'} · jugarás como “{found.nickname || found.name}”
+              </p>
+              {found.firstTime && (
+                <p className="text-[11px] font-extrabold mt-0.5" style={{ color: 'var(--red-d)' }}>
+                  Primera vez: tu PIN es 2026 🎟️
+                </p>
+              )}
+            </div>
+          )}
+          {!found && searched && name.trim().length >= 3 && (
+            <p className="text-[11px] font-bold mt-2 text-center" style={{ color: 'var(--muted)' }}>
+              No te encuentro en la lista 🧐 — habla con el admin pa’ que te meta a la polla
+            </p>
+          )}
+
+          <label className="flabel" style={{ marginTop: 16 }}>PIN · 4 dígitos</label>
           <div className="pinrow">
             {pin.map((d, i) => (
               <input
@@ -72,13 +132,13 @@ export default function LoginPage() {
           {state?.error && (
             <p className="text-sm font-bold text-center mt-3" style={{ color: 'var(--red-d)' }}>{state.error}</p>
           )}
-          <button className="btn red mt-[18px]" disabled={pending || pin.some((d) => !d)} style={{ marginTop: 18 }}>
+          <button className="btn red" disabled={pending || pin.some((d) => !d) || !name.trim()} style={{ marginTop: 18 }}>
             {pending ? 'ENTRANDO…' : '¡A JUGAR! ⚽'}
           </button>
         </form>
 
         <p className="text-center text-xs font-bold px-6 pb-4" style={{ color: 'var(--muted)' }}>
-          ¿Primera vez? El PIN de todos es <b style={{ color: 'var(--red)' }}>2026</b> 🎟️ — después lo cambias
+          ¿Primera vez? El PIN de todos es <b style={{ color: 'var(--red)' }}>2026</b> 🎟️ — al entrar pones el tuyo
         </p>
       </main>
     </div>

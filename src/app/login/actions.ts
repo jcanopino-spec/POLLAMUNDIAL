@@ -31,3 +31,19 @@ export async function logout() {
   await destroySession()
   redirect('/login')
 }
+
+// Reconocimiento del vecino mientras escribe su nombre: si hay una única
+// coincidencia, devolvemos su casa y apodo para darle la bienvenida.
+export async function lookupName(name: string) {
+  const clean = name.trim()
+  if (clean.length < 3) return null
+  const db = adminDb()
+  const { data } = await db
+    .from('participants')
+    .select('name, nickname, house_number, must_change_pin')
+    .ilike('name', `${clean}%`)
+    .limit(2)
+  if (!data || data.length !== 1) return null
+  const p = data[0]
+  return { name: p.name, nickname: p.nickname, house: p.house_number, firstTime: p.must_change_pin }
+}
