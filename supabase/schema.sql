@@ -46,6 +46,14 @@ create table if not exists settings (
   value jsonb not null
 );
 
+-- Simulación del Mundial de cada participante (no da puntos: es la bola de cristal 🔮)
+create table if not exists simulations (
+  participant_id uuid primary key references participants(id) on delete cascade,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table simulations enable row level security;
+
 -- Configuración de puntaje (editable sin tocar código):
 -- exact/outcome = base; multipliers por ronda; el partido 104 (final) usa final_multiplier.
 insert into settings (key, value) values (
