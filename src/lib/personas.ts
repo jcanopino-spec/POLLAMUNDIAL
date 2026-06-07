@@ -31,7 +31,7 @@ const P: Record<string, Persona> = {
   'Henrry Muñeton': { emoji: '🏍️', tag: 'Conductor de moto', prompt: 'Casco de motociclista acelerando hacia la portería' },
   'Reynaldo Cano': { emoji: '🎙️', tag: 'Periodista chiviado', prompt: 'Micrófono de prensa antiguo dando noticias falsas del Mundial' },
   'Victor Mendoza': { emoji: '🧱', tag: 'Constructor', prompt: 'Ladrillo sonriente con casco de la selección' },
-  'Rechards Perez': { emoji: '🛎️', tag: 'Mayordomo', prompt: 'Bandeja de plata sirviendo un balón de fútbol elegante' },
+  'Richard Perez': { emoji: '🛎️', tag: 'Mayordomo', prompt: 'Bandeja de plata sirviendo un balón de fútbol elegante' },
   'simulador 1': { emoji: '🤖', tag: 'Bot de pruebas', prompt: 'Robot pateando penales de mentiras' },
   'simulador 2': { emoji: '🤖', tag: 'Bot de pruebas', prompt: 'Robot pateando penales de mentiras' },
   'simulador 3': { emoji: '🤖', tag: 'Bot de pruebas', prompt: 'Robot pateando penales de mentiras' },
@@ -51,7 +51,7 @@ const APODOS: Record<string, string> = {
   'doña julia': 'Julia Perez', 'somos instantes': 'Mauricio Foranda', 'don edson': 'Edisón Fernandez',
   'don soussa': 'Miguel Gutierrez', estupiñan: 'Ricardo Estupiñan', kiko: 'Francisco Duque',
   herbin: 'Andres Osorno', gerundio: 'Henrry Muñeton', 'el periodista': 'Reynaldo Cano',
-  'el constructor': 'Victor Mendoza', 'el mayordomo': 'Rechards Perez',
+  'el constructor': 'Victor Mendoza', 'el mayordomo': 'Richard Perez',
 }
 
 export function personaFor(nameOrApodo: string): Persona | null {
