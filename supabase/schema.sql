@@ -6,7 +6,10 @@ create table if not exists participants (
   name text not null unique,
   pin_hash text not null,
   is_admin boolean not null default false,
+  must_change_pin boolean not null default true, -- PIN inicial = número de casa; se cambia en el primer ingreso
   champion_team text,                         -- bono: campeón elegido antes del partido inaugural
+  finalist1 text,                             -- bono: los dos equipos que llegan a la final
+  finalist2 text,
   created_at timestamptz not null default now()
 );
 
@@ -50,7 +53,8 @@ insert into settings (key, value) values (
     "outcome": 3,
     "multipliers": {"1": 1, "2": 1, "3": 1, "4": 2, "5": 3, "6": 4, "7": 5, "8": 5},
     "final_multiplier": 6,
-    "champion_bonus": 30
+    "champion_bonus": 30,
+    "finalist_bonus": 15
   }'::jsonb
 ) on conflict (key) do nothing;
 

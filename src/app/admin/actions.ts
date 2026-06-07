@@ -42,7 +42,7 @@ export async function resetPin(participantId: string, pin: string) {
   const db = adminDb()
   const { error } = await db
     .from('participants')
-    .update({ pin_hash: await bcrypt.hash(pin, 10) })
+    .update({ pin_hash: await bcrypt.hash(pin, 10), must_change_pin: true })
     .eq('id', participantId)
   if (error) return { error: 'Error al actualizar el PIN.' }
   revalidatePath('/admin')

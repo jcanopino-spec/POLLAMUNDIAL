@@ -7,6 +7,7 @@ export type Scoring = {
   multipliers: Record<string, number>
   final_multiplier: number
   champion_bonus: number
+  finalist_bonus: number
 }
 
 export const FINAL_MATCH_ID = 104

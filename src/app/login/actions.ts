@@ -13,16 +13,18 @@ export async function login(_prev: { error?: string } | null, formData: FormData
   const db = adminDb()
   const { data: p } = await db
     .from('participants')
-    .select('id, name, pin_hash, is_admin')
+    .select('id, name, pin_hash, is_admin, must_change_pin, champion_team, finalist1, finalist2')
     .ilike('name', name)
     .maybeSingle()
 
   if (!p || !(await bcrypt.compare(pin, p.pin_hash))) {
-    return { error: 'Nombre o PIN incorrecto.' }
+    return { error: 'Nombre o PIN incorrecto. ¿Seguro que vives en esa casa? 🏠' }
   }
 
   await createSession({ id: p.id, name: p.name, isAdmin: p.is_admin })
-  redirect('/')
+  // Primer ingreso (o picks pendientes) → pasar por la bienvenida
+  const needsOnboarding = p.must_change_pin || !p.champion_team || !p.finalist1 || !p.finalist2
+  redirect(needsOnboarding ? '/bienvenida' : '/')
 }
 
 export async function logout() {

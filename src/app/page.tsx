@@ -27,12 +27,20 @@ export default async function FixturePage({
   await syncResults().catch(() => {})
 
   const db = adminDb()
-  const [{ data: matches }, { data: preds }, { data: cfg }] = await Promise.all([
+  const [{ data: matches }, { data: preds }, { data: cfg }, { data: me }] = await Promise.all([
     db.from('matches').select('*').order('kickoff_utc').order('id'),
     db.from('predictions').select('*').eq('participant_id', session.id),
     db.from('settings').select('value').eq('key', 'scoring').single(),
+    db.from('participants').select('must_change_pin, champion_team, finalist1, finalist2').eq('id', session.id).single(),
   ])
-  const all = (matches ?? []) as Match[]
+  // Primer ingreso pendiente → a la bienvenida (PIN nuevo y apuestas grandes primero)
+  const all0 = (matches ?? []) as Match[]
+  const opener = all0.find((m) => m.id === 1)
+  const tournamentStarted = !!opener && new Date(opener.kickoff_utc).getTime() <= Date.now()
+  if (me && (me.must_change_pin || (!tournamentStarted && (!me.champion_team || !me.finalist1 || !me.finalist2)))) {
+    redirect('/bienvenida')
+  }
+  const all = all0
   const myPreds = new Map((preds ?? []).map((p) => [p.match_id, p]))
   const scoring = cfg?.value as Scoring
 

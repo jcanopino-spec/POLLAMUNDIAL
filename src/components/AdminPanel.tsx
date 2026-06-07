@@ -24,11 +24,14 @@ export function ParticipantsAdmin({ participants, myId }: { participants: Partic
   return (
     <section className="rounded-xl border border-slate-800 p-4">
       <h2 className="font-semibold mb-1">Participantes ({participants.length}/25)</h2>
-      <p className="text-xs text-slate-500 mb-3">Crea a cada jugador con su PIN de 4 dígitos y compárteselo.</p>
+      <p className="text-xs text-slate-500 mb-3">
+        PIN inicial = <strong>número de la casa</strong> (4 dígitos, ej. casa 17 → 0017). Al entrar por primera
+        vez, la app los obliga a cambiarlo y a elegir sus finalistas y campeón.
+      </p>
 
       <form action={action} className="flex flex-wrap gap-2 mb-4">
         <input name="name" placeholder="Nombre" required className={`${inputCls} flex-1 min-w-32`} />
-        <input name="pin" placeholder="PIN" inputMode="numeric" pattern="\d{4}" maxLength={4} required className={`${inputCls} w-20 text-center`} />
+        <input name="pin" placeholder="Casa #" inputMode="numeric" pattern="\d{4}" maxLength={4} required className={`${inputCls} w-20 text-center`} />
         <label className="flex items-center gap-1.5 text-xs text-slate-400">
           <input type="checkbox" name="is_admin" className="accent-emerald-600" /> admin
         </label>
