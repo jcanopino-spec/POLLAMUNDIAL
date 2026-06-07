@@ -1,8 +1,12 @@
-// Avatar determinista por nombre (estilo del diseño)
-const AVATARS = ['🐔', '🐓', '🦅', '⚽', '🥅', '🧤', '🦁', '🐆', '🦊', '😎', '🤠', '👽', '💃', '🧢', '🍔', '🎩', '🤓', '👑']
+import { personaFor } from './personas'
 
-export function avatarFor(name: string): string {
+// Avatar del vecino: su personaje del Parche; si no tiene, emoji determinista.
+const FALLBACK = ['🐔', '🐓', '🦅', '⚽', '🥅', '🧤', '🦁', '🐆', '🦊', '😎', '🤠', '👽', '💃', '🧢', '🍔', '🎩', '🤓', '👑']
+
+export function avatarFor(nameOrApodo: string): string {
+  const p = personaFor(nameOrApodo)
+  if (p) return p.emoji
   let h = 0
-  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 997
-  return AVATARS[h % AVATARS.length]
+  for (const ch of nameOrApodo) h = (h * 31 + ch.charCodeAt(0)) % 997
+  return FALLBACK[h % FALLBACK.length]
 }

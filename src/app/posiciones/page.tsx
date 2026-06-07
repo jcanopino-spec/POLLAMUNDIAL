@@ -87,7 +87,7 @@ export default async function PosicionesPage() {
             <div className="kicker">⚽ {played} de 104 jugados</div>
             <h2 className="display">Tabla de<br />posiciones</h2>
           </div>
-          <span className="pill" style={{ background: 'var(--yellow)' }}>{rows.length} 👥</span>
+          <a href="/parche" className="pill" style={{ background: 'var(--yellow)' }}>{rows.length} 👥 →</a>
         </div>
 
         <div className="rk-list">
