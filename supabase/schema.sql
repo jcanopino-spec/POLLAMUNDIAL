@@ -47,7 +47,7 @@ insert into settings (key, value) values (
   'scoring',
   '{
     "exact": 5,
-    "outcome": 2,
+    "outcome": 3,
     "multipliers": {"1": 1, "2": 1, "3": 1, "4": 2, "5": 3, "6": 4, "7": 5, "8": 5},
     "final_multiplier": 6,
     "champion_bonus": 30

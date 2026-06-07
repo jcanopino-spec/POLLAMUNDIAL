@@ -8,12 +8,12 @@ Simulador/polla del Mundial de Fútbol 2026 (Canadá · México · Estados Unido
 - **Puntaje** (configurable en `settings.scoring` de Supabase):
   | Fase | Marcador exacto | Solo resultado (1X2) |
   |---|---|---|
-  | Fase de grupos | 5 | 2 |
-  | Dieciseisavos | 10 | 4 |
-  | Octavos | 15 | 6 |
-  | Cuartos | 20 | 8 |
-  | Semis y 3er puesto | 25 | 10 |
-  | Final | 30 | 12 |
+  | Fase de grupos | 5 | 3 |
+  | Dieciseisavos | 10 | 6 |
+  | Octavos | 15 | 9 |
+  | Cuartos | 20 | 12 |
+  | Semis y 3er puesto | 25 | 15 |
+  | Final | 30 | 18 |
   - Bono **campeón**: 30 pts (se elige antes del partido inaugural).
   - Regla de la casa: se compara el **marcador final (incluida prórroga, sin penales)**.
 - **Actualización automática**: los resultados se sincronizan desde [fixturedownload.com](https://fixturedownload.com/results/fifa-world-cup-2026) cada vez que alguien abre la app (máx. cada 5 min) + cron diario de respaldo + botón "Sincronizar ahora" del admin. Los equipos de eliminatorias se actualizan solos al cerrarse los grupos.
