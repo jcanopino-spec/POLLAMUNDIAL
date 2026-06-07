@@ -70,7 +70,15 @@ export default function WelcomeWizard(p: Props) {
               <li>🔐 Tu PIN inicial es <b>2026</b> — el mismo de TODO el barrio. Cámbialo ya mismo 🕵️.</li>
               <li>🏠 Tu casa también compite en la <b>guerra de casas</b>: tus puntos suman pa’ la tuya.</li>
               <li>🐷 El último del Mundial pone el <b>guaro</b> y el <b>cerdo de la porcícola</b>. Quedas avisado.</li>
+              <li>📡 Soporte técnico: el admin atiende <b>desde los estadios del Mundial</b> (sí, él sí fue 😤✈️). Paciencia, que entre gol y gol también se administra.</li>
             </ol>
+          </div>
+          <div className="castigo" style={{ margin: 0 }}>
+            <div className="big">😎</div>
+            <div className="t">
+              App diseñada por <b>Jcanopino · CEO INPLUX SAS</b>. Prohibido copiarla sin permiso:
+              la gallina tiene abogados 🐔⚖️
+            </div>
           </div>
           <button className="btn red" onClick={next}>
             {pinDone && !needsPicks ? '¡A PRONOSTICAR! ⚽' : 'LISTO, ME LAS SÉ 👌'}
