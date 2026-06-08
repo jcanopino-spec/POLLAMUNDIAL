@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useActionState, useRef, useState } from 'react'
 import { login } from '@/app/login/actions'
 import { Confetti } from '@/components/Fiesta'
@@ -28,25 +29,12 @@ export default function LoginForm({ vecinos }: { vecinos: Vecino[] }) {
     <div className="shell">
       <Confetti />
       <main className="login fade flex-1 flex flex-col justify-center py-6 relative z-[1]">
-        <div className="text-center px-6">
-          <div className="flagline justify-center mt-2">
-            <span style={{ background: 'var(--red)' }} />
-            <span style={{ background: 'var(--green)' }} />
-            <span style={{ background: 'var(--blue)' }} />
+        <div className="text-center">
+          {/* Portada oficial de la Natillera Alameda */}
+          <div className="mx-[14px] overflow-hidden rounded-3xl" style={{ border: '3px solid var(--ink)', boxShadow: '0 6px 0 var(--ink)' }}>
+            <Image src="/portada.jpg" alt="Natillera Alameda — pasión que nos une, sabor que nos representa" width={960} height={639} priority className="w-full h-auto" />
           </div>
-          <div className="mascot bob">
-            {selected ? avatarFor(selected.nickname || selected.name) : '🐔'}
-            <span className="ball">⚽</span>
-          </div>
-          <h1 className="display">
-            <span className="a">La</span> <span className="b">Polla</span>
-            <br />
-            <span className="c">de Alameda</span>
-          </h1>
-          <div className="text-[13px] font-bold mt-2.5" style={{ color: 'var(--muted)' }}>
-            Canadá · México · Estados Unidos
-          </div>
-          <div className="we">WE ARE 26 · MUNDIAL 2026</div>
+          <div className="we" style={{ marginTop: 14 }}>⚽ LA POLLA DE ALAMEDA · WE ARE 26</div>
         </div>
 
         <form action={action} className="card m-[18px] !rounded-3xl !border-[3px] !shadow-[0_8px_0_var(--ink)] !p-5">
