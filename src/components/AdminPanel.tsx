@@ -226,6 +226,75 @@ export function ResultsAdmin({ matches }: { matches: MatchOption[] }) {
   )
 }
 
+// Reporte de apuestas grandes (finalistas + campeón) para publicar en el grupo
+export type PicksRow = {
+  id: string
+  display: string
+  house: string | null
+  finalist1: string | null
+  finalist2: string | null
+  champion: string | null
+}
+
+export function PicksReportAdmin({ rows }: { rows: PicksRow[] }) {
+  const [copied, setCopied] = useState(false)
+  const completos = rows.filter((r) => r.finalist1 && r.finalist2 && r.champion)
+  const faltan = rows.filter((r) => !r.finalist1 || !r.finalist2 || !r.champion)
+
+  function copiar() {
+    const lineas = completos.map(
+      (r) => `${r.display}${r.house ? ` (🏠${r.house})` : ''}: 🏁 ${teamShort(r.finalist1!)} y ${teamShort(r.finalist2!)} · 👑 ${teamShort(r.champion!)}`
+    )
+    const txt =
+      `🐔⚽ LA POLLA DE ALAMEDA — ¡LAS APUESTAS GRANDES YA ESTÁN!\n\n` +
+      `Estos son los finalistas y campeón que arriesgó cada parcero 👇\n\n` +
+      lineas.join('\n') +
+      (faltan.length ? `\n\n⏰ Aún sin apostar: ${faltan.map((r) => r.display).join(', ')}` : '') +
+      `\n\n¡Que empiece la fiesta! 🏆 pollamundialnatillera.vercel.app`
+    navigator.clipboard.writeText(txt).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  return (
+    <section className="card mx-[18px] mb-4">
+      <p className="display text-lg uppercase">Apuestas grandes 👑</p>
+      <p className="text-xs font-bold mb-3" style={{ color: 'var(--muted)' }}>
+        {completos.length} ya apostaron 🏁 · {faltan.length} pendientes ⏰ — de {rows.length} parceros. Cuando estén
+        todos, copia el resumen y publícalo en el grupo.
+      </p>
+
+      <button className="savebtn mb-3" style={{ background: completos.length ? 'var(--green)' : 'var(--cream-2)', color: completos.length ? '#fff' : 'var(--muted)' }} disabled={!completos.length} onClick={copiar}>
+        {copied ? '✓ COPIADO — PÉGALO EN EL GRUPO' : `📋 COPIAR APUESTAS (${completos.length})`}
+      </button>
+
+      <ul className="space-y-2">
+        {rows.map((r) => {
+          const listo = r.finalist1 && r.finalist2 && r.champion
+          return (
+            <li key={r.id} className="rounded-xl px-3 py-2" style={{ border: '2px solid var(--ink)', background: listo ? '#E3F4E9' : 'var(--cream)' }}>
+              <div className="flex items-center gap-2">
+                <div className="av" style={{ width: 30, height: 30, fontSize: 16 }}>{avatarFor(r.display)}</div>
+                <span className="flex-1 text-[13px] font-extrabold min-w-0 truncate">
+                  {r.display}
+                  {r.house && <span className="text-[10px] font-bold" style={{ color: 'var(--blue)' }}> 🏠{r.house}</span>}
+                </span>
+                <span className="text-[11px] font-extrabold">{listo ? '🏁 listo' : '⏰ falta'}</span>
+              </div>
+              {listo && (
+                <p className="text-[11px] font-bold mt-1" style={{ color: 'var(--muted)' }}>
+                  🏁 {teamShort(r.finalist1!)} · {teamShort(r.finalist2!)} → 👑 {teamShort(r.champion!)}
+                </p>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
 // Plantilla Excel para los parceros análogos 📠
 export function PlantillaAdmin() {
   return (

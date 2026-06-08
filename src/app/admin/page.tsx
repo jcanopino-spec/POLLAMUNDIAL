@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
-import { ParticipantsAdmin, PlantillaAdmin, ProgressAdmin, ResultsAdmin, SyncAdmin, type ProgressRow } from '@/components/AdminPanel'
+import { ParticipantsAdmin, PicksReportAdmin, PlantillaAdmin, ProgressAdmin, ResultsAdmin, SyncAdmin, type PicksRow, type ProgressRow } from '@/components/AdminPanel'
 import { adminDb } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { formatKickoff } from '@/lib/teams'
@@ -14,7 +14,7 @@ export default async function AdminPage() {
 
   const db = adminDb()
   const [{ data: participants }, { data: matches }, { data: sync }, { data: allMatches }, { data: allPreds }] = await Promise.all([
-    db.from('participants').select('id, name, is_admin, champion_team, must_change_pin, house_number, nickname').order('name'),
+    db.from('participants').select('id, name, is_admin, champion_team, finalist1, finalist2, must_change_pin, house_number, nickname').order('name'),
     db.from('matches').select('id, home_team, away_team, kickoff_utc, status').lte('kickoff_utc', new Date(Date.now() + 24 * 3600 * 1000).toISOString()).order('kickoff_utc', { ascending: false }),
     db.from('settings').select('value').eq('key', 'last_sync').maybeSingle(),
     db.from('matches').select('id, kickoff_utc'),
@@ -47,6 +47,23 @@ export default async function AdminPage() {
     })
     .sort((a, b) => Number(b.neverEntered) - Number(a.neverEntered) || (b.totalFuture - b.filledFuture) - (a.totalFuture - a.filledFuture))
 
+  // Reporte de apuestas grandes: completas primero, luego pendientes
+  const picksRows: PicksRow[] = (participants ?? [])
+    .filter((p) => !p.is_admin)
+    .map((p) => ({
+      id: p.id,
+      display: p.nickname || p.name,
+      house: p.house_number,
+      finalist1: p.finalist1,
+      finalist2: p.finalist2,
+      champion: p.champion_team,
+    }))
+    .sort((a, b) => {
+      const ca = a.finalist1 && a.finalist2 && a.champion ? 0 : 1
+      const cb = b.finalist1 && b.finalist2 && b.champion ? 0 : 1
+      return ca - cb || a.display.localeCompare(b.display)
+    })
+
   const lastSync = sync?.value?.at
     ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(new Date(sync.value.at))
     : null
@@ -61,6 +78,7 @@ export default async function AdminPage() {
           </div>
           <span className="pill" style={{ background: 'var(--yellow)' }}>🐔 jefe</span>
         </div>
+        <PicksReportAdmin rows={picksRows} />
         <ProgressAdmin rows={progressRows} totalMatches={(allMatches ?? []).length} />
         <ParticipantsAdmin participants={participants ?? []} myId={session.id} />
         <ResultsAdmin
