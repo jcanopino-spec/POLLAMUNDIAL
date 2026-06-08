@@ -4,7 +4,7 @@ export type Persona = { emoji: string; tag: string; prompt: string }
 
 const P: Record<string, Persona> = {
   'Jaime Cano': { emoji: '🧮', tag: 'Los números', prompt: 'Calculadora con guantes de portero atajando un balón' },
-  'Jessica Palaio': { emoji: '🐶', tag: 'Perros', prompt: 'Perrito pug mordiendo un balón de fútbol' },
+  'Jessica Palacio': { emoji: '🐶', tag: 'Perros', prompt: 'Perrito pug mordiendo un balón de fútbol' },
   'Juan Cano': { emoji: '🥽', tag: 'La tecnología', prompt: 'Gafas de realidad virtual sobre un balón con luces de neón' },
   'Oscar Vergara': { emoji: '🍾', tag: 'El aguardiente', prompt: 'Botella de aguardiente abrazando la copa del mundo' },
   'Paula Hurtado': { emoji: '🚬', tag: 'El cigarrillo', prompt: 'Cigarrillo gordito con banda de capitán fumando de forma cómica' },
@@ -42,7 +42,7 @@ const P: Record<string, Persona> = {
 
 // Apodos del Excel → mismo personaje (las vistas suelen mostrar nickname || name)
 const APODOS: Record<string, string> = {
-  'el mundialista': 'Jaime Cano', yuyeimi: 'Jessica Palaio', juanma: 'Juan Cano',
+  'el mundialista': 'Jaime Cano', yuyeimi: 'Jessica Palacio', juanma: 'Juan Cano',
   oscarito: 'Oscar Vergara', 'doña flavia': 'Paula Hurtado', juanda: 'Juan Hurtado',
   carlitos: 'Carlos Ruiz', shakira: 'Celene Alvarez', 'doña cristina': 'Cristina Alvarez',
   'don rsu': 'Alex Giraldo', 'matias y chente': 'Matias Giraldo', andresito: 'Andres Salazar',
