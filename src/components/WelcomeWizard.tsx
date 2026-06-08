@@ -153,7 +153,7 @@ function PinStep({ onDone }: { onDone: () => void }) {
       <div className="card space-y-3">
         <p className="display text-lg uppercase">🔐 Cambia tu PIN</p>
         <p className="text-[13px] font-bold leading-snug" style={{ color: 'var(--muted)' }}>
-          Tu PIN es <b style={{ color: 'var(--ink)' }}>2026</b>, igual que el de todos tus vecinos. Y tus vecinos son
+          Tu PIN es <b style={{ color: 'var(--ink)' }}>2026</b>, igual que el de todo el parche. Y tus parceros son
           capaces de entrar y pronosticarte un <b style={{ color: 'var(--red)' }}>Colombia 0–5 Uzbekistán</b> 💀. Pon
           uno nuevo, solo tuyo:
         </p>

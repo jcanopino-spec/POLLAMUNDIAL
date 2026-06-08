@@ -30,7 +30,7 @@ export default async function ParchePage() {
           <span className="pill" style={{ background: 'var(--yellow)' }}>{vecinos.length} 👥</span>
         </div>
         <p className="px-[18px] pb-4 text-xs font-bold -mt-1" style={{ color: 'var(--muted)' }}>
-          Cada vecino con su personaje oficial de la polla. Cualquier parecido con la realidad… es totalmente intencional 😂
+          Cada parcero futbolero con su personaje oficial de la polla. Cualquier parecido con la realidad… es totalmente intencional 😂
         </p>
 
         <div className="grid grid-cols-2 gap-3 px-[18px]">

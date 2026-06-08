@@ -34,7 +34,7 @@ export function ParticipantsAdmin({ participants, myId }: { participants: Partic
 
   return (
     <section className="card mx-[18px] mb-4">
-      <p className="display text-lg uppercase">Vecinos ({participants.length}/100)</p>
+      <p className="display text-lg uppercase">Parceros futboleros ({participants.length}/100)</p>
       <p className="text-xs font-bold mb-3" style={{ color: 'var(--muted)' }}>
         Todos arrancan con PIN <b style={{ color: 'var(--green)' }}>2026</b> y lo cambian al entrar. La casa alimenta la guerra de casas 🏠.
       </p>
@@ -49,7 +49,7 @@ export function ParticipantsAdmin({ participants, myId }: { participants: Partic
           </label>
         </div>
         <button disabled={pending} className="savebtn">
-          {pending ? 'CREANDO…' : 'CREAR VECINO · PIN 2026'}
+          {pending ? 'CREANDO…' : 'CREAR PARCERO · PIN 2026'}
         </button>
       </form>
       {state && 'error' in state && state.error && <p className="text-xs font-bold mb-2" style={{ color: 'var(--red-d)' }}>{state.error}</p>}
@@ -150,7 +150,7 @@ export function ProgressAdmin({ rows, totalMatches }: { rows: ProgressRow[]; tot
     <section className="card mx-[18px] mb-4">
       <p className="display text-lg uppercase">Avance de pronósticos</p>
       <p className="text-xs font-bold mb-3" style={{ color: 'var(--muted)' }}>
-        {alDia} al día ✅ · {morosos.length} en mora ⏰ — de {rows.length} vecinos. Partidos por jugar: {rows[0]?.totalFuture ?? 0}.
+        {alDia} al día ✅ · {morosos.length} en mora ⏰ — de {rows.length} parceros futboleros. Partidos por jugar: {rows[0]?.totalFuture ?? 0}.
       </p>
 
       {morosos.length > 0 && (

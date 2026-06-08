@@ -134,7 +134,7 @@ export default async function PosicionesPage() {
           <>
             <div className="subhead">🏠 La guerra de casas</div>
             <p className="px-[18px] pb-3 text-xs font-bold -mt-1" style={{ color: 'var(--muted)' }}>
-              Los puntos de cada vecino suman pa’ su casa. Honor para una… sancocho para otra.
+              Los puntos de cada parcero futbolero suman pa’ su casa. Honor para una… sancocho para otra.
             </p>
             <div className="rk-list">
               {houses.map((h, i) => {

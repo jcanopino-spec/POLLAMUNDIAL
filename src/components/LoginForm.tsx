@@ -54,7 +54,7 @@ export default function LoginForm({ vecinos }: { vecinos: Vecino[] }) {
             value={selected?.name ?? ''}
             onChange={(e) => setSelected(vecinos.find((v) => v.name === e.target.value) ?? null)}
           >
-            <option value="" disabled>— Busca tu apodo, vecino —</option>
+            <option value="" disabled>— Busca tu apodo, parcero —</option>
             {vecinos.map((v) => (
               <option key={v.name} value={v.name}>
                 {v.nickname || v.name}{v.house ? ` · Casa ${v.house}` : ''}
