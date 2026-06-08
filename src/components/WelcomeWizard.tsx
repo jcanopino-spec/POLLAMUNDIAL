@@ -48,7 +48,7 @@ export default function WelcomeWizard(p: Props) {
         <h1 className="display text-3xl uppercase leading-none">
           ¡Bienvenido, <span style={{ color: 'var(--green)' }}>{p.name}</span>!
         </h1>
-        <div className="we">WE ARE 26 · MUNDIAL 2026</div>
+        <div className="we">MUNDIAL 2026 🏆</div>
       </div>
 
       {/* Pasos */}
