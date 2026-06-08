@@ -19,15 +19,14 @@ export default function WelcomeWizard(p: Props) {
   const router = useRouter()
   const picksDone = !!(p.picks.finalist1 && p.picks.finalist2 && p.picks.champion)
   const needsPicks = !picksDone && !p.picksLocked
-  const [step, setStep] = useState<'reglas' | 'pin' | 'picks'>('reglas')
+  // Primera vez: el PIN se cambia ANTES de seguir. Después vienen reglas y apuestas.
+  const [step, setStep] = useState<'reglas' | 'pin' | 'picks'>(p.mustChangePin ? 'pin' : 'reglas')
   const [pinDone, setPinDone] = useState(!p.mustChangePin)
 
   function next() {
-    if (step === 'reglas') {
-      if (!pinDone) setStep('pin')
-      else if (needsPicks) setStep('picks')
-      else router.push('/?hola=1')
-    } else if (step === 'pin') {
+    if (step === 'pin') {
+      setStep('reglas')
+    } else if (step === 'reglas') {
       if (needsPicks) setStep('picks')
       else router.push('/?hola=1')
     }
@@ -53,8 +52,8 @@ export default function WelcomeWizard(p: Props) {
 
       {/* Pasos */}
       <div className="chips justify-center pt-4">
+        {p.mustChangePin && <span className={`chip ${step === 'pin' ? 'on' : ''}`}>🔐 Tu PIN {pinDone && '✓'}</span>}
         <span className={`chip ${step === 'reglas' ? 'on' : ''}`}>📜 Reglas</span>
-        {p.mustChangePin && <span className={`chip ${step === 'pin' ? 'on' : ''}`}>🔐 Tu PIN</span>}
         {(needsPicks || picksDone) && <span className={`chip ${step === 'picks' ? 'on' : ''}`}>💰 Apuestas</span>}
       </div>
 
@@ -124,13 +123,18 @@ function PinStep({ onDone }: { onDone: () => void }) {
   const [pin, setPin] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
+  const [saved, setSaved] = useState(false)
   const [pending, startTransition] = useTransition()
 
   function submit() {
     startTransition(async () => {
       const res = await changePin(pin, confirm)
       if (res?.error) setError(res.error)
-      else onDone()
+      else {
+        // Guardado en el registro ✓ — confirmación visible y seguimos
+        setSaved(true)
+        setTimeout(onDone, 1600)
+      }
     })
   }
 
@@ -148,21 +152,39 @@ function PinStep({ onDone }: { onDone: () => void }) {
     />
   )
 
+  if (saved) {
+    return (
+      <div className="px-[18px] pt-1">
+        <div className="card text-center fade" style={{ background: '#E3F4E9' }}>
+          <p className="text-4xl mb-2">🔒✅</p>
+          <p className="display text-xl uppercase">¡PIN guardado!</p>
+          <p className="text-[13px] font-bold mt-1" style={{ color: 'var(--muted)' }}>
+            Quedó bajo llave en el registro. De ahora en adelante entras con TU PIN — el 2026 ya no sirve. Sigamos…
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="px-[18px] pt-1 space-y-3">
       <div className="card space-y-3">
-        <p className="display text-lg uppercase">🔐 Cambia tu PIN</p>
+        <p className="display text-lg uppercase">🔐 Primero lo primero: tu PIN</p>
         <p className="text-[13px] font-bold leading-snug" style={{ color: 'var(--muted)' }}>
-          Tu PIN es <b style={{ color: 'var(--ink)' }}>2026</b>, igual que el de todo el parche. Y tus parceros son
-          capaces de entrar y pronosticarte un <b style={{ color: 'var(--red)' }}>Colombia 0–5 Uzbekistán</b> 💀. Pon
-          uno nuevo, solo tuyo:
+          Entraste con el PIN <b style={{ color: 'var(--ink)' }}>2026</b>, igual que el de todo el parche. Y tus
+          parceros son capaces de entrar y pronosticarte un <b style={{ color: 'var(--red)' }}>Colombia 0–5
+          Uzbekistán</b> 💀. Antes de seguir, pon uno nuevo de 4 dígitos y <b style={{ color: 'var(--ink)' }}>confírmalo
+          dos veces</b>:
         </p>
         {input(pin, setPin, 'Nuevo PIN')}
-        {input(confirm, setConfirm, 'Repítelo')}
+        {input(confirm, setConfirm, 'Confírmalo otra vez')}
         {error && <p className="text-sm font-bold" style={{ color: 'var(--red-d)' }}>{error}</p>}
+        {pin.length === 4 && confirm.length === 4 && pin !== confirm && (
+          <p className="text-sm font-bold" style={{ color: 'var(--red-d)' }}>Los dos PIN no coinciden 🧐 — revísalos</p>
+        )}
       </div>
-      <button className="btn green" onClick={submit} disabled={pending || pin.length !== 4 || confirm.length !== 4}>
-        {pending ? 'GUARDANDO…' : 'GUARDAR MI PIN NUEVO 🔒'}
+      <button className="btn green" onClick={submit} disabled={pending || pin.length !== 4 || confirm.length !== 4 || pin !== confirm}>
+        {pending ? 'GUARDANDO…' : 'VALIDAR Y GUARDAR MI PIN 🔒'}
       </button>
     </div>
   )
