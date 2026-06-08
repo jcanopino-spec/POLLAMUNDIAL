@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
-import { ParticipantsAdmin, ProgressAdmin, ResultsAdmin, SyncAdmin, type ProgressRow } from '@/components/AdminPanel'
+import { ParticipantsAdmin, PlantillaAdmin, ProgressAdmin, ResultsAdmin, SyncAdmin, type ProgressRow } from '@/components/AdminPanel'
 import { adminDb } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { formatKickoff } from '@/lib/teams'
@@ -73,6 +73,7 @@ export default async function AdminPage() {
           }))}
         />
         <SyncAdmin lastSync={lastSync} />
+        <PlantillaAdmin />
         <div className="spacer" />
       </div>
       <Nav session={session} active="admin" />

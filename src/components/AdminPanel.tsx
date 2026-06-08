@@ -226,6 +226,23 @@ export function ResultsAdmin({ matches }: { matches: MatchOption[] }) {
   )
 }
 
+// Plantilla Excel para los parceros análogos 📠
+export function PlantillaAdmin() {
+  return (
+    <section className="card mx-[18px] mb-4">
+      <p className="display text-lg uppercase">Plantilla Excel 📠</p>
+      <p className="text-xs font-bold mb-3" style={{ color: 'var(--muted)' }}>
+        Para el parcero que le tiene miedo a la app o que todavía imprime los correos 😂. Tiene los 104 partidos,
+        calcula los puntos solo (fórmulas incluidas) y trae las reglas con todo y castigo. Se lo envías, lo llena
+        y tú pasas sus pronósticos a la app.
+      </p>
+      <a href="/plantilla-polla.xlsx" download className="savebtn block text-center" style={{ textDecoration: 'none' }}>
+        ⬇️ DESCARGAR PLANTILLA EXCEL
+      </a>
+    </section>
+  )
+}
+
 export function SyncAdmin({ lastSync }: { lastSync: string | null }) {
   const [msg, setMsg] = useState('')
   const [busy, startTransition] = useTransition()
