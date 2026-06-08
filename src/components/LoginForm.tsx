@@ -112,18 +112,18 @@ export default function LoginForm({ vecinos }: { vecinos: Vecino[] }) {
           ¿Primera vez? El PIN de todos es <b style={{ color: 'var(--red)' }}>2026</b> 🎟️ — al entrar pones el tuyo
         </p>
 
-        {/* Créditos del diseñador */}
-        <div className="mx-[18px] mb-5 rounded-2xl px-4 py-3 text-center" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>
+        {/* Créditos del diseñador → vitrina INPLUX */}
+        <a href="/inplux" className="block mx-[18px] mb-5 rounded-2xl px-4 py-3 text-center" style={{ background: 'var(--ink)', color: 'var(--cream)', textDecoration: 'none' }}>
           <p className="text-[11px] font-extrabold">
-            Diseñada por <span style={{ color: 'var(--yellow)' }}>Jcanopino · CEO INPLUX SAS</span> 😎
+            Diseñada y donada por <span style={{ color: 'var(--yellow)' }}>INPLUX SAS</span> 😎
           </p>
           <p className="text-[10px] font-bold mt-1" style={{ color: '#cbbfae' }}>
             Administrada EN VIVO 📡 desde los estadios del Mundial — el único del parche que sí va ✈️🏟️
           </p>
-          <p className="text-[10px] font-bold mt-1" style={{ color: '#cbbfae' }}>
-            © 2026 · Prohibido usarla sin permiso: la gallina tiene abogados 🐔⚖️
+          <p className="text-[10px] font-extrabold mt-1.5" style={{ color: 'var(--yellow)' }}>
+            👉 Mira todo lo que hacemos (toca aquí)
           </p>
-        </div>
+        </a>
       </main>
     </div>
   )

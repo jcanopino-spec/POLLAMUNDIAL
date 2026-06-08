@@ -74,13 +74,13 @@ export default function WelcomeWizard(p: Props) {
               <li>📡 Soporte técnico: el admin atiende <b>desde los estadios del Mundial</b> (sí, él sí fue 😤✈️). Paciencia, que entre gol y gol también se administra.</li>
             </ol>
           </div>
-          <div className="castigo" style={{ margin: 0 }}>
+          <Link href="/inplux" className="castigo" style={{ margin: 0, textDecoration: 'none' }}>
             <div className="big">😎</div>
             <div className="t">
-              App diseñada por <b>Jcanopino · CEO INPLUX SAS</b>. Prohibido copiarla sin permiso:
-              la gallina tiene abogados 🐔⚖️
+              App <b>diseñada y donada por INPLUX SAS</b> a la natillera. ¿Quieres ver todo lo que hacemos?{' '}
+              <b style={{ color: 'var(--yellow)' }}>Toca aquí 👉</b>
             </div>
-          </div>
+          </Link>
           <button className="btn red" onClick={next}>
             {pinDone && !needsPicks ? '¡A PRONOSTICAR! ⚽' : 'LISTO, ME LAS SÉ 👌'}
           </button>
