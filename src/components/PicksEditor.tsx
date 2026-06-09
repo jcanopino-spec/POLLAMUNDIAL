@@ -13,15 +13,21 @@ type Props = {
 }
 
 export default function PicksEditor({ initial, locked, finalistBonus, championBonus, onSaved }: Props) {
+  const confirmedAtStart = !!(initial.finalist1 && initial.finalist2 && initial.champion)
+  const [saved, setSaved] = useState<{ finalists: string[]; champion: string } | null>(
+    confirmedAtStart ? { finalists: [initial.finalist1!, initial.finalist2!], champion: initial.champion! } : null
+  )
   const [finalists, setFinalists] = useState<string[]>(
     [initial.finalist1, initial.finalist2].filter(Boolean) as string[]
   )
   const [champion, setChampion] = useState(initial.champion)
+  // Confirmado → modo lectura; sin guardar o tras tocar Modificar → modo edición
+  const [editing, setEditing] = useState(!confirmedAtStart)
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
 
   function toggleFinalist(team: string) {
-    if (locked) return
+    if (locked || !editing) return
     setMsg(null)
     setFinalists((prev) => {
       if (prev.includes(team)) {
@@ -33,18 +39,62 @@ export default function PicksEditor({ initial, locked, finalistBonus, championBo
     })
   }
 
-  function save() {
+  function confirmar() {
     if (locked || finalists.length !== 2 || !champion) return
     startTransition(async () => {
       const res = await savePicks(finalists[0], finalists[1], champion)
       if (res?.error) setMsg({ text: res.error })
       else {
-        setMsg({ ok: true, text: '✓ ¡Quedaron las apuestas grandes! Que la gallina te acompañe 🐔' })
+        setSaved({ finalists: [...finalists], champion })
+        setEditing(false)
+        setMsg({ ok: true, text: '✓ ¡Apuestas confirmadas! Que la gallina te acompañe 🐔' })
         onSaved?.()
       }
     })
   }
 
+  function modificar() {
+    if (locked) return
+    setMsg(null)
+    setEditing(true)
+  }
+
+  function cancelar() {
+    if (!saved) return
+    setFinalists([...saved.finalists])
+    setChampion(saved.champion)
+    setMsg(null)
+    setEditing(false)
+  }
+
+  // ---------- MODO LECTURA: confirmado y bloqueado a toques ----------
+  if (!editing && saved) {
+    return (
+      <div className="px-[18px] space-y-3">
+        <div className="card" style={{ background: '#E3F4E9' }}>
+          <p className="kicker mb-2" style={{ color: 'var(--green)' }}>✓ Tus apuestas grandes están confirmadas</p>
+          <div className="space-y-1.5 text-sm font-extrabold">
+            <p>🏁 Finalistas: {teamFlag(saved.finalists[0])} {teamShort(saved.finalists[0])} · {teamFlag(saved.finalists[1])} {teamShort(saved.finalists[1])}</p>
+            <p>👑 Campeón: {teamFlag(saved.champion)} {teamShort(saved.champion)}</p>
+          </div>
+        </div>
+        {locked ? (
+          <p className="text-xs font-bold text-center" style={{ color: 'var(--muted)' }}>
+            ⛔ El Mundial ya comenzó: quedaron selladas. Ya no se pueden tocar 🔒
+          </p>
+        ) : (
+          <>
+            <button className="btn ghost" onClick={modificar}>✏️ MODIFICAR MIS APUESTAS</button>
+            <p className="text-[11px] font-bold text-center" style={{ color: 'var(--muted)' }}>
+              Puedes cambiarlas las veces que quieras hasta el pitazo inicial. Después, la gallina 🐔 no negocia.
+            </p>
+          </>
+        )}
+      </div>
+    )
+  }
+
+  // ---------- MODO EDICIÓN ----------
   return (
     <div className="px-[18px] space-y-5">
       <div>
@@ -113,9 +163,14 @@ export default function PicksEditor({ initial, locked, finalistBonus, championBo
           </p>
         )}
         {!locked ? (
-          <button className="btn green" onClick={save} disabled={pending || finalists.length !== 2 || !champion}>
-            {pending ? 'GUARDANDO…' : finalists.length !== 2 ? 'ELIGE TUS 2 FINALISTAS' : !champion ? 'CORONA A TU CAMPEÓN 👑' : '¡CONFIRMAR APUESTAS! 💰'}
-          </button>
+          <>
+            <button className="btn green" onClick={confirmar} disabled={pending || finalists.length !== 2 || !champion}>
+              {pending ? 'GUARDANDO…' : finalists.length !== 2 ? 'ELIGE TUS 2 FINALISTAS' : !champion ? 'CORONA A TU CAMPEÓN 👑' : '✓ CONFIRMAR APUESTAS 💰'}
+            </button>
+            {saved && (
+              <button className="btn ghost" onClick={cancelar} disabled={pending}>✕ CANCELAR CAMBIOS</button>
+            )}
+          </>
         ) : (
           <p className="text-xs font-bold text-center" style={{ color: 'var(--muted)' }}>
             ⛔ El Mundial ya comenzó: estas apuestas quedaron selladas.
