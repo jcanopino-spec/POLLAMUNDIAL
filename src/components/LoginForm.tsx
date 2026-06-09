@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useActionState, useRef, useState } from 'react'
 import { login } from '@/app/login/actions'
 import { Confetti } from '@/components/Fiesta'
+import { MascotBand } from '@/components/Mascots'
 import { avatarFor } from '@/lib/avatar'
 
 export type Vecino = { name: string; nickname: string | null; house: string | null; firstTime: boolean }
@@ -36,6 +37,13 @@ export default function LoginForm({ vecinos }: { vecinos: Vecino[] }) {
           </div>
           <div className="we gold-ribbon" style={{ marginTop: 14 }}>
             <span className="trophy-float">🏆</span> LA POLLA DE ALAMEDA · MUNDIAL 2026 <span className="trophy-float">🏆</span>
+          </div>
+          {/* Las tres mascotas oficiales */}
+          <div className="mt-4">
+            <MascotBand />
+            <p className="text-[10px] font-bold mt-2" style={{ color: 'var(--muted)' }}>
+              Maple 🫎, Zayu 🐆 y Clutch 🦅 te están vigilando 👀
+            </p>
           </div>
         </div>
 

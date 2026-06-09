@@ -4,6 +4,7 @@ import { adminDb } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { personaFor } from '@/lib/personas'
 import { avatarFor } from '@/lib/avatar'
+import { MASCOTAS } from '@/components/Mascots'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,8 +30,23 @@ export default async function ParchePage() {
           </div>
           <span className="pill" style={{ background: 'var(--yellow)' }}>{vecinos.length} 👥</span>
         </div>
-        <p className="px-[18px] pb-4 text-xs font-bold -mt-1" style={{ color: 'var(--muted)' }}>
-          Cada parcero futbolero con su personaje oficial de la polla. Cualquier parecido con la realidad… es totalmente intencional 😂
+        {/* Las mascotas oficiales del Mundial, anfitrionas de la polla */}
+        <div className="mx-[18px] mb-4 card" style={{ background: 'var(--ink)' }}>
+          <p className="kicker mb-2" style={{ color: 'var(--yellow)' }}>🏟️ Los anfitriones oficiales</p>
+          <div className="grid grid-cols-3 gap-2">
+            {MASCOTAS.map((m) => (
+              <div key={m.nombre} className="text-center">
+                <div className="mascot bob mx-auto" style={{ width: 52, height: 52, fontSize: 28, boxShadow: `0 5px 0 ${m.color}` }}>{m.emoji}</div>
+                <p className="text-[12px] font-extrabold mt-1.5" style={{ color: 'var(--cream)' }}>{m.nombre}</p>
+                <p className="text-[9px] font-bold" style={{ color: '#cbbfae' }}>{m.flag} {m.animal}</p>
+                <p className="text-[9px] font-bold mt-1 leading-tight" style={{ color: '#cbbfae' }}>{m.frase}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p className="px-[18px] pb-4 text-xs font-bold" style={{ color: 'var(--muted)' }}>
+          Y cada parcero futbolero con su personaje oficial de la polla. Cualquier parecido con la realidad… es totalmente intencional 😂
         </p>
 
         <div className="grid grid-cols-2 gap-3 px-[18px]">
