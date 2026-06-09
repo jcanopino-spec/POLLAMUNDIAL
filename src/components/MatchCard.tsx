@@ -3,6 +3,26 @@
 import { useState, useTransition } from 'react'
 import { savePrediction } from '@/app/actions'
 import { teamFlag, teamShort } from '@/lib/teams'
+import { stadiumOf } from '@/lib/stadiums'
+
+// Banner del estadio: foto con el nombre y ciudad sobrepuestos
+function StadiumBanner({ venue }: { venue: string | null }) {
+  const st = stadiumOf(venue)
+  if (!st) return null
+  return (
+    <div className="relative h-[88px] overflow-hidden" style={{ borderBottom: '2.5px solid var(--ink)' }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`/stadiums/${st.img}.jpg`} alt={st.nombre} loading="lazy" className="w-full h-full object-cover" />
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(27,23,20,.85) 0%, rgba(27,23,20,.15) 55%, transparent 100%)' }} />
+      <div className="absolute bottom-1.5 left-2.5 right-2.5 flex items-end justify-between gap-2">
+        <div className="min-w-0">
+          <p className="display text-[15px] uppercase leading-none truncate" style={{ color: '#fff' }}>{st.nombre}</p>
+          <p className="text-[10px] font-extrabold" style={{ color: 'var(--yellow)' }}>{st.pais} {st.ciudad}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 type Props = {
   matchId: number
@@ -71,6 +91,7 @@ export default function MatchCard(p: Props) {
     const kind = p.points == null ? null : p.points >= p.maxExact ? 'hit' : p.points > 0 ? 'part' : 'miss'
     return (
       <div className="match done fade">
+        <StadiumBanner venue={p.venue} />
         <div className="mtop">
           <span className="grp">{p.groupLabel}</span>
           <span>{p.kickoffLabel} · FINAL</span>
@@ -96,6 +117,7 @@ export default function MatchCard(p: Props) {
 
   return (
     <div className={`match fade ${p.status === 'live' ? 'live' : esColombia ? 'col' : ''}`}>
+      <StadiumBanner venue={p.venue} />
       <div className="mtop">
         <span className="grp">{esColombia && '🇨🇴 '}{p.groupLabel}</span>
         <span>{p.status === 'live' ? '● EN JUEGO' : p.kickoffLabel}</span>
@@ -127,7 +149,7 @@ export default function MatchCard(p: Props) {
           </>
         )}
         <p className="text-center text-[10px] font-bold pt-2" style={{ color: 'var(--muted)' }}>
-          🏟️ {p.venue} · 📺 {p.tv}
+          📺 {p.tv}
         </p>
       </div>
     </div>
