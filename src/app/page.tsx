@@ -146,11 +146,13 @@ export default async function FixturePage({
                 </div>
                 <div className="team"><div className="fl">{teamFlag(heroMatch.away_team)}</div><div className="nm">{teamShort(heroMatch.away_team)}</div></div>
               </div>
-              <div className="flex justify-center pb-1">
+              <div className="flex items-center justify-center gap-3 pb-1">
+                <span className="trophy-float text-2xl">🏆</span>
                 <Countdown
                   targetIso={new Date(heroMatch.kickoff_utc).toISOString()}
                   label={tournamentStarted ? 'Falta pa’l pitazo' : '¡Arranca el Mundial en…!'}
                 />
+                <span className="trophy-float text-2xl">🏆</span>
               </div>
             </div>
             {/* Grito de guerra del reloj */}

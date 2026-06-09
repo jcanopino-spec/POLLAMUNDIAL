@@ -24,11 +24,12 @@ export default async function ApuestasPage() {
 
   return (
     <div className="shell">
-      <div className="shell-content fade">
-        <div className="appbar">
+      <div className="shell-content fade relative">
+        <span className="trophy-watermark" aria-hidden>🏆</span>
+        <div className="appbar relative z-[1]">
           <div>
             <div className="kicker">💰 Las grandes</div>
-            <h2 className="display">Apuestas</h2>
+            <h2 className="display"><span className="trophy-float">🏆</span> Apuestas</h2>
           </div>
           <span className="pill" style={{ background: 'var(--yellow)' }}>👑 +{scoring?.champion_bonus ?? 30}</span>
         </div>

@@ -33,6 +33,7 @@ export default function WelcomeSplash({ apodo }: { apodo: string }) {
     >
       <Confetti />
       <div className="card !rounded-3xl !border-[3px] !shadow-[0_8px_0_var(--ink)] w-full max-w-sm text-center fade relative z-[1]">
+        <div className="text-3xl mb-1"><span className="trophy-float">🏆</span></div>
         <div className="mascot bob" style={{ width: 84, height: 84, fontSize: 46 }}>
           {avatarFor(apodo)}
           <span className="ball">⚽</span>

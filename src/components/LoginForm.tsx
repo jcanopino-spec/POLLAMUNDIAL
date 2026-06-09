@@ -34,7 +34,9 @@ export default function LoginForm({ vecinos }: { vecinos: Vecino[] }) {
           <div className="mx-[14px] overflow-hidden rounded-3xl" style={{ border: '3px solid var(--ink)', boxShadow: '0 6px 0 var(--ink)' }}>
             <Image src="/portada.jpg" alt="Natillera Alameda — pasión que nos une, sabor que nos representa" width={960} height={639} priority className="w-full h-auto" />
           </div>
-          <div className="we" style={{ marginTop: 14 }}>⚽ LA POLLA DE ALAMEDA · MUNDIAL 2026</div>
+          <div className="we gold-ribbon" style={{ marginTop: 14 }}>
+            <span className="trophy-float">🏆</span> LA POLLA DE ALAMEDA · MUNDIAL 2026 <span className="trophy-float">🏆</span>
+          </div>
         </div>
 
         <form action={action} className="card m-[18px] !rounded-3xl !border-[3px] !shadow-[0_8px_0_var(--ink)] !p-5">

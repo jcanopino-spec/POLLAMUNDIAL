@@ -81,11 +81,12 @@ export default async function PosicionesPage() {
 
   return (
     <div className="shell">
-      <div className="shell-content fade">
-        <div className="appbar">
+      <div className="shell-content fade relative">
+        <span className="trophy-watermark" aria-hidden>🏆</span>
+        <div className="appbar relative z-[1]">
           <div>
             <div className="kicker">⚽ {played} de 104 jugados</div>
-            <h2 className="display">Tabla de<br />posiciones</h2>
+            <h2 className="display"><span className="trophy-float">🏆</span> Tabla de<br />posiciones</h2>
           </div>
           <a href="/parche" className="pill" style={{ background: 'var(--yellow)' }}>{rows.length} 👥 →</a>
         </div>
