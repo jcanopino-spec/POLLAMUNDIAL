@@ -38,6 +38,7 @@ const P: Record<string, Persona> = {
   'simulador 4': { emoji: '🤖', tag: 'Bot de pruebas', prompt: 'Robot pateando penales de mentiras' },
   'simulador 5': { emoji: '🤖', tag: 'Bot de pruebas', prompt: 'Robot pateando penales de mentiras' },
   'Juan Jose': { emoji: '💈', tag: 'El barbero', prompt: 'Poste de barbero girando mientras le hace el corte a un balón de fútbol' },
+  'Martin Zapata': { emoji: '🍔', tag: 'El comelón', prompt: 'Niño gordito muy feliz devorando una hamburguesa gigante con un balón de fútbol al lado' },
   jcanopino: { emoji: '😎', tag: 'CEO INPLUX SAS', prompt: 'El jefe administrando la polla desde los estadios del Mundial' },
 }
 
@@ -53,6 +54,7 @@ const APODOS: Record<string, string> = {
   'don soussa': 'Miguel Gutierrez', estupiñan: 'Ricardo Estupiñan', kiko: 'Francisco Duque',
   herbin: 'Andres Osorno', gerundio: 'Henrry Muñeton', 'el periodista': 'Reynaldo Cano',
   'el constructor': 'Victor Mendoza', 'el mayordomo': 'Richard Perez', 'el barbero': 'Juan Jose',
+  'martin fierro': 'Martin Zapata',
 }
 
 export function personaFor(nameOrApodo: string): Persona | null {
