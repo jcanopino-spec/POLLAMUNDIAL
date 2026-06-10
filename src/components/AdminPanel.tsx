@@ -305,9 +305,15 @@ export function PlantillaAdmin() {
         calcula los puntos solo (fórmulas incluidas) y trae las reglas con todo y castigo. Se lo envías, lo llena
         y tú pasas sus pronósticos a la app.
       </p>
-      <a href="/plantilla-polla.xlsx" download className="savebtn block text-center" style={{ textDecoration: 'none' }}>
-        ⬇️ DESCARGAR PLANTILLA EXCEL
+      <a href="/plantilla-polla.xlsx" download className="savebtn block text-center mb-2" style={{ textDecoration: 'none' }}>
+        ⬇️ PLANTILLA DE PRONÓSTICOS (puntos)
       </a>
+      <a href="/fixture-mundial.xlsx" download className="savebtn block text-center" style={{ textDecoration: 'none', background: 'var(--blue)' }}>
+        ⬇️ FIXTURE CON TABLAS DE GRUPOS (auto)
+      </a>
+      <p className="text-[11px] font-bold mt-2" style={{ color: 'var(--muted)' }}>
+        La 2ª trae el fixture completo y las tablas de los 12 grupos que se calculan solas al meter los marcadores 📊
+      </p>
     </section>
   )
 }
