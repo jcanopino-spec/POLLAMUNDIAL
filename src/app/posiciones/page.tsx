@@ -112,6 +112,14 @@ export default async function PosicionesPage() {
                   ) : (
                     <small>{note(r, i)}</small>
                   )}
+                  {/* Apuestas grandes a la vista de todos (transparencia) */}
+                  {r.champion_team ? (
+                    <small className="block mt-0.5" style={{ color: 'var(--ink)' }}>
+                      🏁 {teamFlag(r.finalist1!)} {teamFlag(r.finalist2!)} · 👑 {teamFlag(r.champion_team)} {teamShort(r.champion_team)} 🏆
+                    </small>
+                  ) : (
+                    <small className="block mt-0.5" style={{ color: 'var(--muted)' }}>🤔 sin apuesta grande aún</small>
+                  )}
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div className="pts">{r.total}<small>PTS</small></div>
