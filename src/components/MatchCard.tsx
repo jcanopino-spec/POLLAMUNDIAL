@@ -5,21 +5,49 @@ import { savePrediction } from '@/app/actions'
 import { teamFlag, teamShort } from '@/lib/teams'
 import { stadiumOf } from '@/lib/stadiums'
 
-// Banner del estadio: foto con el nombre y ciudad sobrepuestos
-function StadiumBanner({ venue }: { venue: string | null }) {
+// Banner del estadio: foto con el nombre/ciudad y, si está EN VIVO,
+// el marcador + minuto + goleadores sobrepuestos (datos cargados por el admin).
+function StadiumBanner({
+  venue, live, home, away, homeScore, awayScore, minute, scorers,
+}: {
+  venue: string | null
+  live?: boolean
+  home?: string
+  away?: string
+  homeScore?: number | null
+  awayScore?: number | null
+  minute?: string | null
+  scorers?: string | null
+}) {
   const st = stadiumOf(venue)
   if (!st) return null
+  const h = live ? (minute ? `${st.nombre} · ${minute}` : st.nombre) : `${st.nombre}`
   return (
-    <div className="relative h-[88px] overflow-hidden" style={{ borderBottom: '2.5px solid var(--ink)' }}>
+    <div className={`relative overflow-hidden ${live ? 'h-[124px]' : 'h-[88px]'}`} style={{ borderBottom: '2.5px solid var(--ink)' }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`/stadiums/${st.img}.jpg`} alt={st.nombre} loading="lazy" className="w-full h-full object-cover" />
-      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(27,23,20,.85) 0%, rgba(27,23,20,.15) 55%, transparent 100%)' }} />
-      <div className="absolute bottom-1.5 left-2.5 right-2.5 flex items-end justify-between gap-2">
-        <div className="min-w-0">
+      <div className="absolute inset-0" style={{ background: `linear-gradient(to top, rgba(27,23,20,${live ? '.92' : '.85'}) 0%, rgba(27,23,20,${live ? '.5' : '.15'}) 55%, transparent 100%)` }} />
+
+      {live ? (
+        <div className="absolute inset-0 flex flex-col justify-end p-2.5">
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded animate-pulse" style={{ background: 'var(--red)', color: '#fff' }}>🔴 EN VIVO</span>
+            {minute && <span className="text-[11px] font-extrabold" style={{ color: 'var(--yellow)' }}>{minute}</span>}
+            <span className="text-[10px] font-bold ml-auto truncate" style={{ color: '#cbbfae' }}>{st.pais} {st.nombre}</span>
+          </div>
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-[13px] font-extrabold truncate max-w-[34%] text-right" style={{ color: '#fff' }}>{home}</span>
+            <span className="display text-2xl px-2 py-0.5 rounded-lg" style={{ background: 'var(--yellow)', color: 'var(--ink)' }}>{homeScore ?? 0} – {awayScore ?? 0}</span>
+            <span className="text-[13px] font-extrabold truncate max-w-[34%]" style={{ color: '#fff' }}>{away}</span>
+          </div>
+          {scorers && <p className="text-[10px] font-bold text-center mt-1 truncate" style={{ color: '#e8dcc8' }}>⚽ {scorers}</p>}
+        </div>
+      ) : (
+        <div className="absolute bottom-1.5 left-2.5 right-2.5">
           <p className="display text-[15px] uppercase leading-none truncate" style={{ color: '#fff' }}>{st.nombre}</p>
           <p className="text-[10px] font-extrabold" style={{ color: 'var(--yellow)' }}>{st.pais} {st.ciudad}</p>
         </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -36,6 +64,8 @@ type Props = {
   status: 'scheduled' | 'live' | 'finished'
   actualHome: number | null
   actualAway: number | null
+  minute: string | null
+  scorers: string | null
   initialHome: number | null
   initialAway: number | null
   points: number | null
@@ -117,10 +147,19 @@ export default function MatchCard(p: Props) {
 
   return (
     <div className={`match fade ${p.status === 'live' ? 'live' : esColombia ? 'col' : ''}`}>
-      <StadiumBanner venue={p.venue} />
+      <StadiumBanner
+        venue={p.venue}
+        live={p.status === 'live'}
+        home={teamShort(p.home)}
+        away={teamShort(p.away)}
+        homeScore={p.actualHome}
+        awayScore={p.actualAway}
+        minute={p.minute}
+        scorers={p.scorers}
+      />
       <div className="mtop">
         <span className="grp">{esColombia && '🇨🇴 '}{p.groupLabel}</span>
-        <span>{p.status === 'live' ? '● EN JUEGO' : p.kickoffLabel}</span>
+        <span>{p.status === 'live' ? '🔴 en juego' : p.kickoffLabel}</span>
       </div>
       <div className="mbody">
         <div className="mteam"><div className="fl">{teamFlag(p.home)}</div><div className="nm">{teamShort(p.home)}</div></div>

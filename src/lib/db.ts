@@ -18,6 +18,8 @@ export type Match = {
   home_score: number | null
   away_score: number | null
   winner: string | null
+  minute: string | null
+  scorers: string | null
   status: 'scheduled' | 'live' | 'finished'
 }
 
