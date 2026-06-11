@@ -78,6 +78,24 @@ export async function deleteParticipant(participantId: string) {
   return { ok: true }
 }
 
+// Marcador EN VIVO: el admin lo actualiza desde el estadio. Marca el partido como
+// 'live' con el marcador del momento, SIN finalizar ni repartir puntos todavía.
+export async function setLiveScore(matchId: number, home: number, away: number) {
+  await requireAdmin()
+  if (!Number.isInteger(matchId) || !Number.isInteger(home) || !Number.isInteger(away) || home < 0 || away < 0) {
+    return { error: 'Marcador inválido.' }
+  }
+  const db = adminDb()
+  const { error } = await db
+    .from('matches')
+    .update({ home_score: home, away_score: away, status: 'live', manual_result: true, updated_at: new Date().toISOString() })
+    .eq('id', matchId)
+  if (error) return { error: 'No se pudo actualizar el marcador.' }
+  revalidatePath('/vivo')
+  revalidatePath('/admin')
+  return { ok: `🔴 EN VIVO: ${home}–${away}` }
+}
+
 // Resultado manual (cuando el feed se demora o falla). El sync lo respeta
 // hasta que el feed traiga su propio marcador.
 export async function setManualResult(_prev: unknown, formData: FormData) {
@@ -112,6 +130,7 @@ export async function setManualResult(_prev: unknown, formData: FormData) {
   await recomputePoints()
   revalidatePath('/')
   revalidatePath('/posiciones')
+  revalidatePath('/vivo')
   revalidatePath('/admin')
   return { ok: `Resultado del partido ${matchId} guardado y puntos recalculados.` }
 }

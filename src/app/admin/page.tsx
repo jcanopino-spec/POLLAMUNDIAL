@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
-import { ParticipantsAdmin, PicksReportAdmin, PlantillaAdmin, ProgressAdmin, ResultsAdmin, SyncAdmin, type PicksRow, type ProgressRow } from '@/components/AdminPanel'
+import { LiveScoreAdmin, ParticipantsAdmin, PicksReportAdmin, PlantillaAdmin, ProgressAdmin, ResultsAdmin, SyncAdmin, type PicksRow, type ProgressRow } from '@/components/AdminPanel'
 import { adminDb } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { formatKickoff } from '@/lib/teams'
@@ -81,6 +81,15 @@ export default async function AdminPage() {
         <PicksReportAdmin rows={picksRows} />
         <ProgressAdmin rows={progressRows} totalMatches={(allMatches ?? []).length} />
         <ParticipantsAdmin participants={participants ?? []} myId={session.id} />
+        <LiveScoreAdmin
+          matches={(matches ?? []).map((m) => ({
+            id: m.id,
+            home_team: m.home_team,
+            away_team: m.away_team,
+            status: m.status,
+            kickoffLabel: formatKickoff(m.kickoff_utc),
+          }))}
+        />
         <ResultsAdmin
           matches={(matches ?? []).map((m) => ({
             id: m.id,

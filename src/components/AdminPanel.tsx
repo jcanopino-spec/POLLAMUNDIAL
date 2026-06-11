@@ -6,6 +6,7 @@ import {
   deleteParticipant,
   forceSyncNow,
   resetPin,
+  setLiveScore,
   setManualResult,
   updateParticipantInfo,
 } from '@/app/admin/actions'
@@ -190,6 +191,60 @@ export function ProgressAdmin({ rows, totalMatches }: { rows: ProgressRow[]; tot
           )
         })}
       </ul>
+    </section>
+  )
+}
+
+// Marcador EN VIVO desde el estadio: +/- rápido, sin finalizar
+export function LiveScoreAdmin({ matches }: { matches: MatchOption[] }) {
+  const [sel, setSel] = useState<number | ''>('')
+  const [h, setH] = useState(0)
+  const [a, setA] = useState(0)
+  const [msg, setMsg] = useState('')
+  const [busy, startTransition] = useTransition()
+
+  const m = matches.find((x) => x.id === sel)
+  const push = (nh: number, na: number) => {
+    setH(nh); setA(na)
+    if (sel === '') return
+    startTransition(async () => {
+      const r = await setLiveScore(sel as number, nh, na)
+      setMsg(('error' in r && r.error) || ('ok' in r && r.ok) || '')
+    })
+  }
+
+  return (
+    <section className="card mx-[18px] mb-4" style={{ borderColor: 'var(--red)' }}>
+      <p className="display text-lg uppercase">🔴 Marcador en vivo</p>
+      <p className="text-xs font-bold mb-3" style={{ color: 'var(--muted)' }}>
+        Desde el estadio: elige el partido y mueve el marcador con +/−. Aparece EN VIVO para todos (sin repartir puntos aún).
+      </p>
+      <select
+        className="input w-full mb-3"
+        value={sel}
+        onChange={(e) => { const id = Number(e.target.value) || ''; setSel(id); setH(0); setA(0); setMsg('') }}
+      >
+        <option value="">— Elige el partido que se juega —</option>
+        {matches.map((x) => (
+          <option key={x.id} value={x.id}>P{x.id} · {teamShort(x.home_team)} vs {teamShort(x.away_team)} · {x.kickoffLabel}</option>
+        ))}
+      </select>
+      {m && (
+        <div className="grid grid-cols-2 gap-3">
+          {([[teamShort(m.home_team), h, (v: number) => push(v, a)], [teamShort(m.away_team), a, (v: number) => push(h, v)]] as const).map(([nm, val, set], i) => (
+            <div key={i} className="text-center rounded-xl p-2" style={{ border: '2px solid var(--ink)', background: 'var(--cream)' }}>
+              <p className="text-[12px] font-extrabold truncate">{nm}</p>
+              <p className="display text-3xl my-1">{val}</p>
+              <div className="flex gap-2 justify-center">
+                <button disabled={busy || val <= 0} onClick={() => set(Math.max(0, val - 1))} className="w-9 h-9 rounded-lg font-bold" style={{ border: '2px solid var(--ink)', background: '#fff' }}>−</button>
+                <button disabled={busy} onClick={() => set(val + 1)} className="w-9 h-9 rounded-lg font-bold" style={{ border: '2px solid var(--ink)', background: 'var(--yellow)' }}>+</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {msg && <p className="text-xs font-bold mt-2 text-center" style={{ color: 'var(--red-d)' }}>{msg}</p>}
+      {m && <p className="text-[11px] font-bold mt-2" style={{ color: 'var(--muted)' }}>Cuando termine, usa “Resultado manual” abajo para finalizar y repartir los puntos 🏁</p>}
     </section>
   )
 }
