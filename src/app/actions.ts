@@ -61,9 +61,13 @@ export async function savePicks(finalist1: string, finalist2: string, champion: 
   }
 
   const db = adminDb()
-  const { data: opener } = await db.from('matches').select('kickoff_utc').eq('id', 1).single()
-  if (opener && new Date(opener.kickoff_utc).getTime() <= Date.now()) {
-    return { error: '⛔ El Mundial ya comenzó: las apuestas grandes están cerradas.' }
+  const [{ data: opener }, { data: lockCfg }] = await Promise.all([
+    db.from('matches').select('kickoff_utc').eq('id', 1).single(),
+    db.from('settings').select('value').eq('key', 'picks_locked').maybeSingle(),
+  ])
+  const lockedNow = lockCfg?.value?.locked || (opener && new Date(opener.kickoff_utc).getTime() <= Date.now())
+  if (lockedNow) {
+    return { error: '⛔ El Mundial ya arrancó: las apuestas grandes quedaron selladas. Ya no se mueven 🔒' }
   }
 
   const { error } = await db

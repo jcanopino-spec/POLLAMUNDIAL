@@ -23,8 +23,10 @@ export async function login(_prev: { error?: string } | null, formData: FormData
 
   await createSession({ id: p.id, name: p.name, isAdmin: p.is_admin })
   // Primer ingreso (o picks pendientes) → bienvenida; si no, splash de entrada.
-  // Los admin no participan: no se les exigen apuestas.
-  const needsOnboarding = p.must_change_pin || (!p.is_admin && (!p.champion_team || !p.finalist1 || !p.finalist2))
+  // Los admin no participan; y si las apuestas ya están cerradas, no se exigen.
+  const { data: lockCfg } = await db.from('settings').select('value').eq('key', 'picks_locked').maybeSingle()
+  const picksLocked = !!lockCfg?.value?.locked
+  const needsOnboarding = p.must_change_pin || (!p.is_admin && !picksLocked && (!p.champion_team || !p.finalist1 || !p.finalist2))
   redirect(needsOnboarding ? '/bienvenida' : '/?hola=1')
 }
 

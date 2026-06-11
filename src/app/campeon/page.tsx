@@ -13,13 +13,14 @@ export default async function ApuestasPage() {
   if (!session) redirect('/login')
 
   const db = adminDb()
-  const [{ data: me }, { data: opener }, { data: cfg }] = await Promise.all([
+  const [{ data: me }, { data: opener }, { data: cfg }, { data: lockCfg }] = await Promise.all([
     db.from('participants').select('champion_team, finalist1, finalist2').eq('id', session.id).single(),
     db.from('matches').select('kickoff_utc').eq('id', 1).single(),
     db.from('settings').select('value').eq('key', 'scoring').single(),
+    db.from('settings').select('value').eq('key', 'picks_locked').maybeSingle(),
   ])
 
-  const locked = !!opener && new Date(opener.kickoff_utc).getTime() <= Date.now()
+  const locked = !!lockCfg?.value?.locked || (!!opener && new Date(opener.kickoff_utc).getTime() <= Date.now())
   const scoring = cfg?.value as Scoring
 
   return (

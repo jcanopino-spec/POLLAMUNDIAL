@@ -15,15 +15,16 @@ export default async function BienvenidaPage() {
   if (!session) redirect('/login')
 
   const db = adminDb()
-  const [{ data: me }, { data: opener }, { data: cfg }] = await Promise.all([
+  const [{ data: me }, { data: opener }, { data: cfg }, { data: lockCfg }] = await Promise.all([
     db.from('participants').select('must_change_pin, champion_team, finalist1, finalist2').eq('id', session.id).single(),
     db.from('matches').select('kickoff_utc').eq('id', 1).single(),
     db.from('settings').select('value').eq('key', 'scoring').single(),
+    db.from('settings').select('value').eq('key', 'picks_locked').maybeSingle(),
   ])
   if (!me) redirect('/login')
 
   const scoring = cfg?.value as Scoring
-  const picksLocked = !!opener && new Date(opener.kickoff_utc).getTime() <= Date.now()
+  const picksLocked = !!lockCfg?.value?.locked || (!!opener && new Date(opener.kickoff_utc).getTime() <= Date.now())
 
   return (
     <div className="shell">

@@ -32,20 +32,22 @@ export default async function FixturePage({
   await syncResults().catch(() => {})
 
   const db = adminDb()
-  const [{ data: matches }, { data: preds }, { data: cfg }, { data: me }] = await Promise.all([
+  const [{ data: matches }, { data: preds }, { data: cfg }, { data: me }, { data: lockCfg }] = await Promise.all([
     db.from('matches').select('*').order('kickoff_utc').order('id'),
     db.from('predictions').select('*').eq('participant_id', session.id),
     db.from('settings').select('value').eq('key', 'scoring').single(),
     db.from('participants').select('must_change_pin, champion_team, finalist1, finalist2, nickname').eq('id', session.id).single(),
+    db.from('settings').select('value').eq('key', 'picks_locked').maybeSingle(),
   ])
   const all = (matches ?? []) as Match[]
   const opener = all.find((m) => m.id === 1)
   const now = Date.now()
   const tournamentStarted = !!opener && new Date(opener.kickoff_utc).getTime() <= now
+  const picksLocked = !!lockCfg?.value?.locked || tournamentStarted
 
   // Primer ingreso pendiente → a la bienvenida (PIN nuevo y apuestas grandes primero).
-  // Los admin no participan: no se les exigen apuestas.
-  if (me && (me.must_change_pin || (!session.isAdmin && !tournamentStarted && (!me.champion_team || !me.finalist1 || !me.finalist2)))) {
+  // Los admin no participan; y si las apuestas ya están bloqueadas, no se obliga a hacerlas.
+  if (me && (me.must_change_pin || (!session.isAdmin && !picksLocked && (!me.champion_team || !me.finalist1 || !me.finalist2)))) {
     redirect('/bienvenida')
   }
 
