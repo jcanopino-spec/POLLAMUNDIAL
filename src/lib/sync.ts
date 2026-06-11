@@ -2,7 +2,113 @@ import { adminDb } from './db'
 import { multiplierFor, pointsFor, type Scoring } from './scoring'
 
 const FEED = 'https://fixturedownload.com/feed/json/fifa-world-cup-2026'
+const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard'
 const STALE_MS = 5 * 60 * 1000 // re-sincronizar máximo cada 5 min
+
+// ---- ESPN: marcador en tiempo real + goleadores (fuente principal) ----
+// Normaliza nombres de equipo (ESPN → nombre del feed/BD) para emparejar partidos.
+function canon(name: string): string {
+  const n = name
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[^a-z ]/g, '').trim()
+  const alias: Record<string, string> = {
+    'south korea': 'korea republic', 'korea republic': 'korea republic',
+    'czech republic': 'czechia', czechia: 'czechia',
+    'united states': 'usa', usa: 'usa', 'usa men': 'usa',
+    turkiye: 'turkiye', turkey: 'turkiye',
+    iran: 'ir iran', 'ir iran': 'ir iran',
+    'ivory coast': 'cote divoire', 'cote divoire': 'cote divoire',
+    'cape verde': 'cabo verde', 'cabo verde': 'cabo verde',
+    'dr congo': 'congo dr', 'congo dr': 'congo dr', 'democratic republic of the congo': 'congo dr',
+    curacao: 'curacao',
+  }
+  return alias[n] ?? n
+}
+
+type EspnGame = {
+  home: string; away: string
+  homeScore: number; awayScore: number
+  state: 'pre' | 'in' | 'post'
+  minute: string; scorers: string; winner: string | null
+}
+
+async function fetchEspn(dateYmd: string): Promise<EspnGame[]> {
+  const res = await fetch(`${ESPN}?dates=${dateYmd}`, {
+    cache: 'no-store',
+    headers: { 'User-Agent': 'Mozilla/5.0 PollaAlameda' },
+  })
+  if (!res.ok) return []
+  const data = await res.json()
+  const out: EspnGame[] = []
+  for (const ev of data.events ?? []) {
+    const c = ev.competitions?.[0]
+    if (!c) continue
+    const comps = c.competitors ?? []
+    const H = comps.find((x: { homeAway: string }) => x.homeAway === 'home')
+    const A = comps.find((x: { homeAway: string }) => x.homeAway === 'away')
+    if (!H || !A) continue
+    const state = ev.status?.type?.state as 'pre' | 'in' | 'post'
+    // goleadores en orden
+    const goals: string[] = []
+    for (const d of c.details ?? []) {
+      if (!d.scoringPlay) continue
+      const ath = (d.athletesInvolved ?? [])[0]
+      const nm = ath?.shortName ?? ath?.displayName ?? d.type?.text ?? 'Gol'
+      const min = d.clock?.displayValue ?? ''
+      const og = d.ownGoal ? ' (a.p.)' : ''
+      const pen = d.penaltyKick ? ' (pen)' : ''
+      goals.push(`${min} ${nm}${og}${pen}`.trim())
+    }
+    const minute = state === 'post' ? 'FINAL' : (ev.status?.displayClock || ev.status?.type?.shortDetail || 'EN VIVO')
+    out.push({
+      home: H.team?.displayName ?? '', away: A.team?.displayName ?? '',
+      homeScore: Number(H.score ?? 0), awayScore: Number(A.score ?? 0),
+      state, minute, scorers: goals.join(', '),
+      winner: H.winner ? (H.team?.displayName ?? null) : A.winner ? (A.team?.displayName ?? null) : null,
+    })
+  }
+  return out
+}
+
+// Empareja juegos de ESPN con los partidos de la BD (por nombres de equipo) y
+// actualiza marcador, estado, minuto y goleadores. Devuelve cuántos finalizaron.
+async function syncFromEspn(db: ReturnType<typeof adminDb>): Promise<number> {
+  const now = new Date()
+  const ymd = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '')
+  const ayer = new Date(now.getTime() - 24 * 3600 * 1000)
+  const manana = new Date(now.getTime() + 24 * 3600 * 1000)
+  const dates = [...new Set([ymd(ayer), ymd(now), ymd(manana)])]
+
+  const games = (await Promise.all(dates.map((d) => fetchEspn(d).catch(() => [])))).flat()
+  if (!games.length) return 0
+
+  const { data: dbMatches } = await db.from('matches').select('id, home_team, away_team, winner')
+  let finished = 0
+  for (const g of games) {
+    const gh = canon(g.home), ga = canon(g.away)
+    const m = (dbMatches ?? []).find(
+      (x) => (canon(x.home_team) === gh && canon(x.away_team) === ga) || (canon(x.home_team) === ga && canon(x.away_team) === gh)
+    )
+    if (!m) continue
+    // ¿ESPN tiene local/visita al revés de nuestra BD? Reorienta el marcador.
+    const flip = canon(m.home_team) === ga
+    const hs = flip ? g.awayScore : g.homeScore
+    const as = flip ? g.homeScore : g.awayScore
+    const status = g.state === 'post' ? 'finished' : g.state === 'in' ? 'live' : 'scheduled'
+    await db.from('matches').update({
+      home_score: g.state === 'pre' ? null : hs,
+      away_score: g.state === 'pre' ? null : as,
+      winner: g.winner ? (canon(g.winner) === canon(m.home_team) ? m.home_team : m.away_team) : m.winner,
+      minute: g.state === 'pre' ? null : g.minute,
+      scorers: g.scorers || null,
+      status,
+      manual_result: true, // ESPN manda sobre fixturedownload
+      updated_at: new Date().toISOString(),
+    }).eq('id', m.id)
+    if (status === 'finished') finished++
+  }
+  return finished
+}
 
 type FeedMatch = {
   MatchNumber: number
@@ -76,6 +182,10 @@ export async function syncResults(force = false): Promise<{ synced: boolean; fin
 
   const { error } = await db.from('matches').upsert(rows)
   if (error) throw error
+
+  // ESPN manda: marcador real, estado, minuto y goleadores (corre después del feed,
+  // que ya resolvió los nombres de equipos en eliminatorias).
+  await syncFromEspn(db).catch(() => {})
 
   const finishedCount = await recomputePoints()
 

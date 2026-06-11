@@ -131,6 +131,9 @@ export default function MatchCard(p: Props) {
           <div className="resultline"><span className="big">{p.actualHome}</span><span className="scoremid">:</span><span className="big">{p.actualAway}</span></div>
           <div className="mteam"><div className="fl">{teamFlag(p.away)}</div><div className="nm">{teamShort(p.away)}</div></div>
         </div>
+        {p.scorers && (
+          <p className="text-center text-[11px] font-bold px-3 pb-1.5" style={{ color: 'var(--muted)' }}>⚽ {p.scorers}</p>
+        )}
         <div className="predbadge">
           <span className="pl">
             {saved ? <>Tu pronóstico: <b>{saved.home}–{saved.away}</b></> : 'No pronosticaste 🫥'}
