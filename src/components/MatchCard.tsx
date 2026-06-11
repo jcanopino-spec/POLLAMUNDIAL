@@ -52,6 +52,8 @@ function StadiumBanner({
   )
 }
 
+import type { MatchStats } from '@/lib/db'
+
 type Props = {
   matchId: number
   home: string
@@ -66,10 +68,46 @@ type Props = {
   actualAway: number | null
   minute: string | null
   scorers: string | null
+  stats: MatchStats | null
   initialHome: number | null
   initialAway: number | null
   points: number | null
   maxExact: number
+}
+
+// Estadísticas sabrosas del partido: barras comparativas + asistencia + tarjetas
+function StatsBlock({ stats }: { stats: MatchStats }) {
+  const keys = Object.keys(stats.home ?? {})
+  if (!keys.length && !stats.attendance && !stats.cards) return null
+  return (
+    <details className="px-3 pb-3">
+      <summary className="text-[11px] font-extrabold cursor-pointer select-none" style={{ color: 'var(--blue)' }}>
+        📊 Datos del partido
+      </summary>
+      <div className="mt-2 space-y-1.5">
+        {keys.map((k) => {
+          const h = parseFloat(stats.home[k]) || 0
+          const a = parseFloat(stats.away[k]) || 0
+          const tot = h + a || 1
+          return (
+            <div key={k}>
+              <div className="flex justify-between text-[10px] font-extrabold">
+                <span>{stats.home[k]}</span>
+                <span style={{ color: 'var(--muted)' }}>{k}</span>
+                <span>{stats.away[k]}</span>
+              </div>
+              <div className="flex h-1.5 rounded-full overflow-hidden" style={{ border: '1px solid var(--ink)' }}>
+                <div style={{ width: `${(h / tot) * 100}%`, background: 'var(--green)' }} />
+                <div style={{ width: `${(a / tot) * 100}%`, background: 'var(--blue)' }} />
+              </div>
+            </div>
+          )
+        })}
+        {stats.cards && <p className="text-[10px] font-bold pt-1" style={{ color: 'var(--muted)' }}>{stats.cards}</p>}
+        {stats.attendance && <p className="text-[10px] font-bold" style={{ color: 'var(--muted)' }}>👥 {stats.attendance.toLocaleString('es-CO')} en el estadio</p>}
+      </div>
+    </details>
+  )
 }
 
 function Stepper({ val, set, disabled, label }: { val: number; set: (v: number) => void; disabled: boolean; label: string }) {
@@ -134,6 +172,7 @@ export default function MatchCard(p: Props) {
         {p.scorers && (
           <p className="text-center text-[11px] font-bold px-3 pb-1.5" style={{ color: 'var(--muted)' }}>⚽ {p.scorers}</p>
         )}
+        {p.stats && <StatsBlock stats={p.stats} />}
         <div className="predbadge">
           <span className="pl">
             {saved ? <>Tu pronóstico: <b>{saved.home}–{saved.away}</b></> : 'No pronosticaste 🫥'}

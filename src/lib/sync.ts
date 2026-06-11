@@ -1,4 +1,4 @@
-import { adminDb } from './db'
+import { adminDb, type MatchStats } from './db'
 import { multiplierFor, pointsFor, type Scoring } from './scoring'
 
 const FEED = 'https://fixturedownload.com/feed/json/fifa-world-cup-2026'
@@ -30,6 +30,7 @@ type EspnGame = {
   homeScore: number; awayScore: number
   state: 'pre' | 'in' | 'post'
   minute: string; scorers: string; winner: string | null
+  stats: MatchStats | null
 }
 
 async function fetchEspn(dateYmd: string): Promise<EspnGame[]> {
@@ -60,11 +61,38 @@ async function fetchEspn(dateYmd: string): Promise<EspnGame[]> {
       goals.push(`${min} ${nm}${og}${pen}`.trim())
     }
     const minute = state === 'post' ? 'FINAL' : (ev.status?.displayClock || ev.status?.type?.shortDetail || 'EN VIVO')
+
+    // Tarjetas (con minuto) y estadísticas por equipo
+    const cards: string[] = []
+    for (const d of c.details ?? []) {
+      if (!d.yellowCard && !d.redCard) continue
+      const ath = (d.athletesInvolved ?? [])[0]
+      const nm = ath?.shortName ?? ath?.displayName ?? ''
+      const min = d.clock?.displayValue ?? ''
+      cards.push(`${d.redCard ? '🟥' : '🟨'} ${nm} ${min}`.trim())
+    }
+    const WANT: Record<string, string> = {
+      possessionPct: 'Posesión %', totalShots: 'Tiros', shotsOnTarget: 'Tiros al arco',
+      wonCorners: 'Córners', foulsCommitted: 'Faltas', goalAssists: 'Asistencias',
+    }
+    const grab = (comp: typeof H) => {
+      const o: Record<string, string> = {}
+      for (const s of comp.statistics ?? []) if (WANT[s.name]) o[WANT[s.name]] = String(s.displayValue)
+      return o
+    }
+    const hasStats = (H.statistics ?? []).length > 0
+    const stats: MatchStats | null = state === 'pre' || !hasStats ? null : {
+      attendance: c.attendance ? Number(c.attendance) : undefined,
+      cards: cards.join(', ') || undefined,
+      home: grab(H), away: grab(A),
+    }
+
     out.push({
       home: H.team?.displayName ?? '', away: A.team?.displayName ?? '',
       homeScore: Number(H.score ?? 0), awayScore: Number(A.score ?? 0),
       state, minute, scorers: goals.join(', '),
       winner: H.winner ? (H.team?.displayName ?? null) : A.winner ? (A.team?.displayName ?? null) : null,
+      stats,
     })
   }
   return out
@@ -90,17 +118,21 @@ async function syncFromEspn(db: ReturnType<typeof adminDb>): Promise<number> {
       (x) => (canon(x.home_team) === gh && canon(x.away_team) === ga) || (canon(x.home_team) === ga && canon(x.away_team) === gh)
     )
     if (!m) continue
-    // ¿ESPN tiene local/visita al revés de nuestra BD? Reorienta el marcador.
+    // ¿ESPN tiene local/visita al revés de nuestra BD? Reorienta marcador y stats.
     const flip = canon(m.home_team) === ga
     const hs = flip ? g.awayScore : g.homeScore
     const as = flip ? g.homeScore : g.awayScore
     const status = g.state === 'post' ? 'finished' : g.state === 'in' ? 'live' : 'scheduled'
+    const stats = g.stats
+      ? { ...g.stats, home: flip ? g.stats.away : g.stats.home, away: flip ? g.stats.home : g.stats.away }
+      : null
     await db.from('matches').update({
       home_score: g.state === 'pre' ? null : hs,
       away_score: g.state === 'pre' ? null : as,
       winner: g.winner ? (canon(g.winner) === canon(m.home_team) ? m.home_team : m.away_team) : m.winner,
       minute: g.state === 'pre' ? null : g.minute,
       scorers: g.scorers || null,
+      stats,
       status,
       manual_result: true, // ESPN manda sobre fixturedownload
       updated_at: new Date().toISOString(),

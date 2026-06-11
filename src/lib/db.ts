@@ -20,7 +20,15 @@ export type Match = {
   winner: string | null
   minute: string | null
   scorers: string | null
+  stats: MatchStats | null
   status: 'scheduled' | 'live' | 'finished'
+}
+
+export type MatchStats = {
+  attendance?: number
+  cards?: string
+  home: Record<string, string>
+  away: Record<string, string>
 }
 
 export type Prediction = {
