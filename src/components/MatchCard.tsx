@@ -45,10 +45,29 @@ function StadiumBanner({
       ) : (
         <div className="absolute bottom-1.5 left-2.5 right-2.5">
           <p className="display text-[15px] uppercase leading-none truncate" style={{ color: '#fff' }}>{st.nombre}</p>
-          <p className="text-[10px] font-extrabold" style={{ color: 'var(--yellow)' }}>{st.pais} {st.ciudad}</p>
+          <p className="text-[10px] font-extrabold" style={{ color: 'var(--yellow)' }}>
+            {st.pais} {st.ciudad} · 👥 {st.capacidad.toLocaleString('es-CO')} · {st.ano}
+          </p>
         </div>
       )}
     </div>
+  )
+}
+
+// Dato curioso del estadio (desplegable)
+function StadiumFact({ venue }: { venue: string | null }) {
+  const st = stadiumOf(venue)
+  if (!st) return null
+  return (
+    <details className="px-3 pb-2">
+      <summary className="text-[11px] font-extrabold cursor-pointer select-none" style={{ color: 'var(--blue)' }}>
+        🏟️ Sobre el estadio
+      </summary>
+      <p className="text-[11px] font-bold mt-1 leading-snug" style={{ color: 'var(--muted)' }}>
+        <b style={{ color: 'var(--ink)' }}>{st.nombre}</b> · {st.pais} {st.ciudad} · 👥 {st.capacidad.toLocaleString('es-CO')} espectadores · inaugurado en {st.ano}.
+        <br />💡 {st.dato}
+      </p>
+    </details>
   )
 }
 
@@ -173,6 +192,7 @@ export default function MatchCard(p: Props) {
           <p className="text-center text-[11px] font-bold px-3 pb-1.5" style={{ color: 'var(--muted)' }}>⚽ {p.scorers}</p>
         )}
         {p.stats && <StatsBlock stats={p.stats} />}
+        <StadiumFact venue={p.venue} />
         <div className="predbadge">
           <span className="pl">
             {saved ? <>Tu pronóstico: <b>{saved.home}–{saved.away}</b></> : 'No pronosticaste 🫥'}
@@ -233,6 +253,7 @@ export default function MatchCard(p: Props) {
           📺 {p.tv}
         </p>
       </div>
+      <StadiumFact venue={p.venue} />
     </div>
   )
 }
