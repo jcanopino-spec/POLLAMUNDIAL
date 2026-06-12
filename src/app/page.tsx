@@ -257,6 +257,7 @@ export default async function FixturePage({
                   minute={m.minute}
                   scorers={m.scorers}
                   stats={m.stats}
+                  odds={m.odds}
                   initialHome={pred?.home_score ?? null}
                   initialAway={pred?.away_score ?? null}
                   points={pred?.points ?? null}

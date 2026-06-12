@@ -71,7 +71,28 @@ function StadiumFact({ venue }: { venue: string | null }) {
   )
 }
 
-import type { MatchStats } from '@/lib/db'
+import type { MatchOdds, MatchStats } from '@/lib/db'
+
+// Cuotas 1X2 (formato decimal, como las casas de apuestas). Resalta la favorita.
+function OddsRow({ odds, home, away }: { odds: MatchOdds; home: string; away: string }) {
+  const min = Math.min(odds.h, odds.d, odds.a)
+  const cell = (label: string, val: number) => (
+    <div className="flex-1 text-center rounded-lg py-1" style={{ border: '2px solid var(--ink)', background: val === min ? 'var(--yellow)' : 'var(--cream)' }}>
+      <div className="text-[9px] font-extrabold uppercase truncate px-0.5" style={{ color: 'var(--muted)' }}>{label}</div>
+      <div className="text-[14px] font-extrabold" style={{ color: 'var(--ink)' }}>{val.toFixed(2)}</div>
+    </div>
+  )
+  return (
+    <div className="px-3 pb-2">
+      <p className="text-[9px] font-extrabold uppercase mb-1" style={{ color: 'var(--blue)' }}>💰 Cuotas {odds.prov} · ⭐ favorito</p>
+      <div className="flex gap-1.5">
+        {cell(home, odds.h)}
+        {cell('Empate', odds.d)}
+        {cell(away, odds.a)}
+      </div>
+    </div>
+  )
+}
 
 type Props = {
   matchId: number
@@ -88,6 +109,7 @@ type Props = {
   minute: string | null
   scorers: string | null
   stats: MatchStats | null
+  odds: MatchOdds | null
   initialHome: number | null
   initialAway: number | null
   points: number | null
@@ -253,6 +275,7 @@ export default function MatchCard(p: Props) {
           📺 {p.tv}
         </p>
       </div>
+      {p.odds && <OddsRow odds={p.odds} home={teamShort(p.home)} away={teamShort(p.away)} />}
       <StadiumFact venue={p.venue} />
     </div>
   )

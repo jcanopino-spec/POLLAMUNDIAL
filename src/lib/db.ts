@@ -21,8 +21,11 @@ export type Match = {
   minute: string | null
   scorers: string | null
   stats: MatchStats | null
+  odds: MatchOdds | null
   status: 'scheduled' | 'live' | 'finished'
 }
+
+export type MatchOdds = { h: number; d: number; a: number; prov: string }
 
 export type MatchStats = {
   attendance?: number

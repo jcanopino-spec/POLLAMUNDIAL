@@ -31,6 +31,16 @@ type EspnGame = {
   state: 'pre' | 'in' | 'post'
   minute: string; scorers: string; winner: string | null
   stats: MatchStats | null
+  odds: { h: number; d: number; a: number; prov: string } | null
+}
+
+// Americano (+220 / -115) → decimal (formato casas de apuestas Colombia)
+function toDecimal(american: string | undefined): number | null {
+  if (!american) return null
+  const n = Number(american.replace('+', ''))
+  if (!Number.isFinite(n) || n === 0) return null
+  const dec = n > 0 ? n / 100 + 1 : 100 / Math.abs(n) + 1
+  return Math.round(dec * 100) / 100
 }
 
 async function fetchEspn(dateYmd: string): Promise<EspnGame[]> {
@@ -87,12 +97,26 @@ async function fetchEspn(dateYmd: string): Promise<EspnGame[]> {
       home: grab(H), away: grab(A),
     }
 
+    // Cuotas 1X2 (local/empate/visita) del proveedor de ESPN.
+    // Antes del partido ESPN usa close/open (no current); en vivo usa current.
+    let odds: EspnGame['odds'] = null
+    const o = (c.odds ?? [])[0]
+    const pick = (side: { current?: { odds?: string }; close?: { odds?: string }; open?: { odds?: string } } | undefined) =>
+      side?.current?.odds ?? side?.close?.odds ?? side?.open?.odds
+    if (o?.moneyline) {
+      const h = toDecimal(pick(o.moneyline.home))
+      const a = toDecimal(pick(o.moneyline.away))
+      const dr2 = toDecimal(pick(o.moneyline.draw))
+        ?? toDecimal(o.drawOdds?.moneyLine != null ? (o.drawOdds.moneyLine > 0 ? `+${o.drawOdds.moneyLine}` : `${o.drawOdds.moneyLine}`) : undefined)
+      if (h && a && dr2) odds = { h, d: dr2, a, prov: o.provider?.name ?? 'Casa' }
+    }
+
     out.push({
       home: H.team?.displayName ?? '', away: A.team?.displayName ?? '',
       homeScore: Number(H.score ?? 0), awayScore: Number(A.score ?? 0),
       state, minute, scorers: goals.join(', '),
       winner: H.winner ? (H.team?.displayName ?? null) : A.winner ? (A.team?.displayName ?? null) : null,
-      stats,
+      stats, odds,
     })
   }
   return out
@@ -126,6 +150,8 @@ async function syncFromEspn(db: ReturnType<typeof adminDb>): Promise<number> {
     const stats = g.stats
       ? { ...g.stats, home: flip ? g.stats.away : g.stats.home, away: flip ? g.stats.home : g.stats.away }
       : null
+    // Cuotas: reorienta local/visita si ESPN los trae al revés
+    const odds = g.odds ? (flip ? { ...g.odds, h: g.odds.a, a: g.odds.h } : g.odds) : null
     await db.from('matches').update({
       home_score: g.state === 'pre' ? null : hs,
       away_score: g.state === 'pre' ? null : as,
@@ -133,6 +159,7 @@ async function syncFromEspn(db: ReturnType<typeof adminDb>): Promise<number> {
       minute: g.state === 'pre' ? null : g.minute,
       scorers: g.scorers || null,
       stats,
+      ...(odds ? { odds } : {}),
       status,
       manual_result: true, // ESPN manda sobre fixturedownload
       updated_at: new Date().toISOString(),
