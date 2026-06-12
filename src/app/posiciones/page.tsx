@@ -91,6 +91,18 @@ export default async function PosicionesPage() {
           <a href="/parche" className="pill" style={{ background: 'var(--yellow)' }}>{rows.length} 👥 →</a>
         </div>
 
+        {/* MFito, mascota oficial de la tabla (cortesía MF Group) */}
+        <div className="mx-[18px] mb-3 rounded-2xl overflow-hidden flex items-center gap-3 relative z-[1]" style={{ border: '3px solid var(--ink)', background: 'linear-gradient(100deg, #14120f 0%, #2a2417 100%)', boxShadow: '0 5px 0 var(--ink)' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/mfito.jpg" alt="MFito" className="h-[84px] w-[84px] object-cover shrink-0" style={{ borderRight: '3px solid var(--ink)' }} />
+          <div className="py-2 pr-3 min-w-0">
+            <p className="display text-base uppercase leading-none" style={{ color: '#F7D56B' }}>MFito presenta la tabla</p>
+            <p className="text-[11px] font-bold mt-1" style={{ color: '#e8dcc8' }}>
+              La mascota oficial 🦅 · cortesía de <b style={{ color: '#fff' }}>MF Group</b>, Somos Instantes y Doña Julia. ¡El último engorda el cerdo! 🐷
+            </p>
+          </div>
+        </div>
+
         <div className="rk-list">
           {rows.map((r, i) => {
             const isMe = r.id === session.id
