@@ -292,7 +292,7 @@ body {
   50% { transform: translateY(-7px) rotate(4deg); }
 }
 .mfito-flag {
-  width: 26px; height: 26px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;
   object-fit: cover; vertical-align: middle;
   animation: mfito-hop 1.8s ease-in-out infinite;
 }
