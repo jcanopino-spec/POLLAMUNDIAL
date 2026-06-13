@@ -73,6 +73,12 @@ function StadiumFact({ venue }: { venue: string | null }) {
 
 import type { MatchOdds, MatchStats } from '@/lib/db'
 
+// MFito patrullando junto a la bandera (patrocinador MF Group). side: 'l' | 'r'
+function Mfito({ side }: { side: 'l' | 'r' }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/mfito-head.png" alt="MFito" className={`mfito-flag ${side === 'r' ? 'r' : ''}`} />
+}
+
 // Cuotas 1X2 (formato decimal, como las casas de apuestas). Resalta la favorita.
 function OddsRow({ odds, home, away }: { odds: MatchOdds; home: string; away: string }) {
   const min = Math.min(odds.h, odds.d, odds.a)
@@ -206,9 +212,9 @@ export default function MatchCard(p: Props) {
           <span>{p.kickoffLabel} · FINAL</span>
         </div>
         <div className="mbody" style={{ paddingBottom: 6 }}>
-          <div className="mteam"><div className="fl">{teamFlag(p.home)}</div><div className="nm">{teamShort(p.home)}</div></div>
+          <div className="mteam"><div className="fl"><Mfito side="l" /> {teamFlag(p.home)}</div><div className="nm">{teamShort(p.home)}</div></div>
           <div className="resultline"><span className="big">{p.actualHome}</span><span className="scoremid">:</span><span className="big">{p.actualAway}</span></div>
-          <div className="mteam"><div className="fl">{teamFlag(p.away)}</div><div className="nm">{teamShort(p.away)}</div></div>
+          <div className="mteam"><div className="fl">{teamFlag(p.away)} <Mfito side="r" /></div><div className="nm">{teamShort(p.away)}</div></div>
         </div>
         {p.scorers && (
           <p className="text-center text-[11px] font-bold px-3 pb-1.5" style={{ color: 'var(--muted)' }}>⚽ {p.scorers}</p>
@@ -246,13 +252,13 @@ export default function MatchCard(p: Props) {
         <span>{p.status === 'live' ? '🔴 en juego' : p.kickoffLabel}</span>
       </div>
       <div className="mbody">
-        <div className="mteam"><div className="fl">{teamFlag(p.home)}</div><div className="nm">{teamShort(p.home)}</div></div>
+        <div className="mteam"><div className="fl"><Mfito side="l" /> {teamFlag(p.home)}</div><div className="nm">{teamShort(p.home)}</div></div>
         <div className="flex items-center gap-1">
           <Stepper val={home} set={(v) => { setHome(v); setError('') }} disabled={p.locked || !editing} label={p.home} />
           <span className="scoremid">:</span>
           <Stepper val={away} set={(v) => { setAway(v); setError('') }} disabled={p.locked || !editing} label={p.away} />
         </div>
-        <div className="mteam"><div className="fl">{teamFlag(p.away)}</div><div className="nm">{teamShort(p.away)}</div></div>
+        <div className="mteam"><div className="fl">{teamFlag(p.away)} <Mfito side="r" /></div><div className="nm">{teamShort(p.away)}</div></div>
       </div>
       <div className="mfoot">
         {p.locked ? (

@@ -286,6 +286,18 @@ body {
 }
 .trophy-float { display: inline-block; animation: trophy-shine 3s ease-in-out infinite; }
 
+/* 🦅 MFito junto a cada bandera (patrocinador) — saltito alterno */
+@keyframes mfito-hop {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-7px) rotate(4deg); }
+}
+.mfito-flag {
+  width: 26px; height: 26px; border-radius: 50%;
+  object-fit: cover; vertical-align: middle;
+  animation: mfito-hop 1.8s ease-in-out infinite;
+}
+.mfito-flag.r { animation-delay: 0.9s; }   /* el de la derecha salta en contratiempo */
+
 /* Marca de agua gigante del trofeo detrás de una sección */
 .trophy-watermark {
   position: absolute;
