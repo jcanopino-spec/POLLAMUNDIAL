@@ -39,9 +39,10 @@ def narrar(d):
     t.append(f"Manda en la mesa {lider['nm']} (casa {lider['casa']}) con {lider['total']} puntos. Que lo disfrute mientras dure.")
     col=d['rows'][-1]
     t.append(f"Y el farol de la cola es {col['nm']} con {col['total']} puntos: vaya destapando el guaro.")
+    t.append("Mención especial pa' MFito, el pronóstico oficial: otra vez acertó NADA. Bien vestido eso sí.")
     return clean(' '.join(t))
 
-W,H=1080,1610
+W,H=1080,1800
 img=Image.new('RGB',(W,H),BG1); dr=ImageDraw.Draw(img)
 # fondo: degradado + halo dorado superior
 for y in range(H):
@@ -70,7 +71,7 @@ dr.text((178,303),'NARRA: MFITO',font=FB(20),fill=BG1,anchor='ma')
 # ---- Crónica ----
 y=360
 nar=narrar(d)
-lines=textwrap.wrap(nar,width=82)[:6]
+lines=textwrap.wrap(nar,width=82)[:7]
 boxh=58+len(lines)*28
 dr.rounded_rectangle([46,y,W-46,y+boxh],radius=20,fill=CARD,outline=GOLD,width=2)
 dr.text((70,y+16),'LA CRÓNICA DEL DÍA',font=FB(24),fill=GOLDB)
@@ -111,6 +112,21 @@ last=d['rows'][-1]; y+=4
 dr.rounded_rectangle([46,y,W-46,y+54],radius=12,fill=(64,32,30),outline=RED,width=2)
 dr.text((70,y+14),'COLERO (va por el cerdo):',font=FB(22),fill=(255,205,196))
 dr.text((W-66,y+14),f"{last['nm']} · {last['total']} pts",font=FB(23),fill=WHITE,anchor='ra'); y+=74
+
+# ---- Bullying a MFito (sección fija) ----
+mbh=126
+dr.rounded_rectangle([46,y,W-46,y+mbh],radius=16,fill=(30,27,20),outline=GOLDB,width=2)
+# MFito chiquito a la izquierda
+mfm=Image.open('/tmp/mfito.png').convert('RGBA')
+mmh=104; mmw=int(mfm.width*mmh/mfm.height); mfm=mfm.resize((mmw,mmh))
+img.paste(mfm,(64,y+(mbh-mmh)//2),mfm)
+dr=ImageDraw.Draw(img)
+tx=64+mmw+18
+dr.text((tx,y+16),'EL "EXPERTO" MFITO HOY:',font=FB(24),fill=RED)
+dr.text((tx,y+50),'Pronósticos acertados: CERO. Otra vez.',font=F(20),fill=CREAM)
+dr.text((tx,y+78),'El pájaro mejor vestido y peor pronosticador',font=F(18),fill=GOLDB)
+dr.text((tx,y+100),'del Mundial. Que alguien le quite el cargo.',font=F(18),fill=GOLDB)
+y+=mbh+10
 
 # ---- Sello VIGILADO con logos reales ----
 sh=158
