@@ -134,6 +134,11 @@ export default function LoginForm({ vecinos }: { vecinos: Vecino[] }) {
             👉 Mira todo lo que hacemos (toca aquí)
           </p>
         </a>
+        <p className="text-center text-[11px] font-bold -mt-3 mb-5">
+          <a href="https://www.inplux.co" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--yellow)', textDecoration: 'underline' }}>
+            🌐 www.inplux.co
+          </a>
+        </p>
       </main>
     </div>
   )
