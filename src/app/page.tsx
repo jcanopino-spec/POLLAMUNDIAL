@@ -170,6 +170,20 @@ export default async function FixturePage({
           </div>
         )}
 
+        {/* Banner de las mascotas patrocinadoras (MFito 🦅 + Cerdiño 🐷) */}
+        <div className="mx-[14px] mt-3 overflow-hidden rounded-2xl relative" style={{ border: '3px solid var(--ink)', boxShadow: '0 5px 0 var(--ink)' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/mascotas-banner.jpg" alt="MFito y Cerdiño: el último pone el cerdo" className="w-full h-auto block" />
+          <div className="px-3 py-2 text-center" style={{ background: 'var(--ink)' }}>
+            <p className="text-[12px] font-extrabold" style={{ color: 'var(--yellow)' }}>
+              🦅 MFito te aconseja · 🐷 Cerdiño te vigila
+            </p>
+            <p className="text-[11px] font-bold" style={{ color: '#cbbfae' }}>
+              Pronostica con cabeza… ¡que el último pone el guaro y el cerdo de la Porcícola! 🐖
+            </p>
+          </div>
+        </div>
+
         {/* Modos de vista */}
         <div className="seg" style={{ marginTop: 16 }}>
           <Link className={vista === 'dia' ? 'on' : ''} href="/?vista=dia">📅 Día</Link>
