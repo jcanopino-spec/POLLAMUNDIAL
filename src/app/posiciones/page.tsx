@@ -91,16 +91,35 @@ export default async function PosicionesPage() {
           <a href="/parche" className="pill" style={{ background: 'var(--yellow)' }}>{rows.length} 👥 →</a>
         </div>
 
-        {/* MFito, mascota oficial de la tabla (cortesía MF Group) */}
-        <div className="mx-[18px] mb-3 rounded-2xl overflow-hidden flex items-center gap-3 relative z-[1]" style={{ border: '3px solid var(--ink)', background: 'linear-gradient(100deg, #14120f 0%, #2a2417 100%)', boxShadow: '0 5px 0 var(--ink)' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mfito.jpg" alt="MFito" className="h-[84px] w-[84px] object-cover shrink-0" style={{ borderRight: '3px solid var(--ink)' }} />
-          <div className="py-2 pr-3 min-w-0">
-            <p className="display text-base uppercase leading-none" style={{ color: '#F7D56B' }}>MFito presenta la tabla</p>
-            <p className="text-[11px] font-bold mt-1" style={{ color: '#e8dcc8' }}>
-              La mascota oficial 🦅 · cortesía de <b style={{ color: '#fff' }}>MF Group</b>, Somos Instantes y Doña Julia. ¡El último engorda el cerdo! 🐷
-            </p>
+        {/* Las dos mascotas presiden la tabla: MFito (arriba) y Cerdiño (colero) */}
+        <div className="mx-[18px] mb-3 rounded-2xl overflow-hidden relative z-[1]" style={{ border: '3px solid var(--ink)', background: 'linear-gradient(100deg, #14120f 0%, #2a2417 100%)', boxShadow: '0 5px 0 var(--ink)' }}>
+          <div className="flex items-stretch">
+            {/* MFito felicita al líder */}
+            <div className="flex items-center gap-2 flex-1 min-w-0 p-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/mfito-head.png" alt="MFito" className="h-[58px] w-[58px] shrink-0" />
+              <div className="min-w-0">
+                <p className="display text-[13px] uppercase leading-none" style={{ color: '#F7D56B' }}>MFito 🦅</p>
+                <p className="text-[10px] font-bold" style={{ color: '#e8dcc8' }}>
+                  “Felicito al de arriba… aunque yo lo hubiera hecho mejor 😎”
+                </p>
+              </div>
+            </div>
+            {/* Cerdiño vigila al colero */}
+            <div className="flex items-center gap-2 flex-1 min-w-0 p-2" style={{ borderLeft: '2px solid var(--ink)', background: 'rgba(70,110,55,.18)' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/cerdino-head.png" alt="Cerdiño" className="h-[58px] w-[58px] shrink-0" />
+              <div className="min-w-0">
+                <p className="display text-[13px] uppercase leading-none" style={{ color: '#9fdc8c' }}>Cerdiño 🐷</p>
+                <p className="text-[10px] font-bold" style={{ color: '#e8dcc8' }}>
+                  {last ? <>“Le voy reservando el cerdo a <b style={{ color: '#fff' }}>{last.nickname || last.name}</b> 😏”</> : '“¿Quién paga el cerdo? Ya veremos…”'}
+                </p>
+              </div>
+            </div>
           </div>
+          <p className="text-center text-[10px] font-bold py-1" style={{ background: 'var(--ink)', color: '#cbbfae' }}>
+            🦅 MF Group · 🐷 Unión Porcícola — ¡el último pone el guaro y el cerdo!
+          </p>
         </div>
 
         <div className="rk-list">
