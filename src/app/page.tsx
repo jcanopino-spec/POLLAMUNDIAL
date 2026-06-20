@@ -157,16 +157,23 @@ export default async function FixturePage({
                 <span className="trophy-float text-2xl">🏆</span>
               </div>
             </div>
-            {/* Grito de guerra del reloj */}
-            <div className="text-center px-4 py-2.5" style={{ background: 'var(--yellow)', color: 'var(--ink)', borderTop: '3px solid var(--ink)' }}>
-              <p className="text-[12px] font-extrabold leading-tight">
-                {tournamentStarted
-                  ? '⏰ ¡El reloj corre y los puntos vuelan! El que no llena, regala plata 🐷'
-                  : totalPending > 0
-                    ? `🏃💨 ¡CORRAN A LLENAR LA POLLA! Te faltan ${totalPending} y cuando el árbitro pite… NO valen lágrimas, ni tutelas, ni “se me fue la luz” 😭⛔`
-                    : '✅ ¡Quedaste al día, crack! Ahora siéntate a ver caer a los que no llenaron 🍿😎'}
-              </p>
-            </div>
+            {liveCount > 0 ? (
+              <Link href="/envivo" className="block text-center px-4 py-3" style={{ background: 'var(--red)', color: '#fff', borderTop: '3px solid var(--ink)', textDecoration: 'none' }}>
+                <span className="text-[14px] font-extrabold">🔴 {liveCount} PARTIDO(S) EN VIVO · ¡VER LA GUILLOTINA! ⚔️</span>
+                <span className="block text-[11px] font-bold" style={{ color: '#ffe' }}>mira a quién se le va el marcador en tiempo real 🍿</span>
+              </Link>
+            ) : (
+              /* Grito de guerra del reloj */
+              <div className="text-center px-4 py-2.5" style={{ background: 'var(--yellow)', color: 'var(--ink)', borderTop: '3px solid var(--ink)' }}>
+                <p className="text-[12px] font-extrabold leading-tight">
+                  {tournamentStarted
+                    ? '⏰ ¡El reloj corre y los puntos vuelan! El que no llena, regala plata 🐷'
+                    : totalPending > 0
+                      ? `🏃💨 ¡CORRAN A LLENAR LA POLLA! Te faltan ${totalPending} y cuando el árbitro pite… NO valen lágrimas, ni tutelas, ni “se me fue la luz” 😭⛔`
+                      : '✅ ¡Quedaste al día, crack! Ahora siéntate a ver caer a los que no llenaron 🍿😎'}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
