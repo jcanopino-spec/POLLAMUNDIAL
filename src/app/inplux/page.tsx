@@ -23,7 +23,9 @@ export default async function InpluxPage() {
           <div className="mascot bob" style={{ width: 92, height: 92, fontSize: 50, background: 'radial-gradient(circle at 50% 34%, #FFE08A, #F6B53C)' }}>
             😎<span className="ball">🚀</span>
           </div>
-          <h1 className="display text-3xl uppercase leading-none mt-1">INPLUX SAS</h1>
+          <a href="https://www.inplux.co" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <h1 className="display text-3xl uppercase leading-none mt-1">INPLUX SAS</h1>
+          </a>
           <p className="text-[13px] font-bold mt-2" style={{ color: 'var(--muted)' }}>
             El hub de inteligencia artificial de Colombia 🇨🇴
           </p>
@@ -94,8 +96,8 @@ export default async function InpluxPage() {
 
         {/* CTA */}
         <div className="px-[18px] pt-5">
-          <a href="https://inplux.co/" target="_blank" rel="noopener noreferrer" className="btn red block text-center" style={{ textDecoration: 'none' }}>
-            🚀 CONÓCENOS EN INPLUX.CO
+          <a href="https://www.inplux.co" target="_blank" rel="noopener noreferrer" className="btn red block text-center" style={{ textDecoration: 'none' }}>
+            🚀 CONÓCENOS EN WWW.INPLUX.CO
           </a>
           <p className="text-center text-[11px] font-bold mt-3" style={{ color: 'var(--muted)' }}>
             ¿Tienes una idea o un problema que parece imposible? Nosotros hacemos el milagro… y de paso te lo
@@ -106,7 +108,7 @@ export default async function InpluxPage() {
         <div className="castigo">
           <div className="big">🐔</div>
           <div className="t">
-            <b>INPLUX SAS</b> · Jcanopino, CEO · Hecho con cariño desde los estadios del Mundial 🏟️.
+            <a href="https://www.inplux.co" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--yellow)' }}><b>www.inplux.co</b></a> · Jcanopino, CEO · Hecho con cariño desde los estadios del Mundial 🏟️.
             Prohibido copiar la gallina: tiene abogados (los de Kelsen ⚖️).
           </div>
         </div>
