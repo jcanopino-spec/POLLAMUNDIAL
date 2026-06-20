@@ -4,7 +4,7 @@ import type { Session } from '@/lib/session'
 const TABS = [
   { key: 'fixture', href: '/', ic: '🎯', label: 'Pronos' },
   { key: 'posiciones', href: '/posiciones', ic: '🏆', label: 'Tabla' },
-  { key: 'simulador', href: '/simulador', ic: '🔮', label: 'Simu' },
+  { key: 'simulador', href: '/simulador', ic: '📊', label: 'Grupos' },
   { key: 'campeon', href: '/campeon', ic: '👑', label: 'Apuestas' },
   { key: 'reglas', href: '/bienvenida', ic: '🐔', label: 'Reglas' },
 ] as const
