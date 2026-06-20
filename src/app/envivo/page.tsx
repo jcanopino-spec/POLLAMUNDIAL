@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import AutoRefresh from '@/components/AutoRefresh'
+import GoalBuzz from '@/components/GoalBuzz'
 import { adminDb, type Match } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { multiplierFor, type Scoring } from '@/lib/scoring'
@@ -98,6 +99,7 @@ export default async function EnVivoPage() {
           const muertos = list.filter((p) => p.e.cls === 'miss').length
           return (
             <div key={m.id} className="mx-[14px] mb-4">
+              <GoalBuzz matchId={m.id} goals={ch + ca} />
               {/* Marcador en vivo */}
               <div className="hero" style={{ margin: 0 }}>
                 <div className="hp">
