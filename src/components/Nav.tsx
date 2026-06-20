@@ -3,7 +3,7 @@ import type { Session } from '@/lib/session'
 
 const TABS = [
   { key: 'fixture', href: '/', ic: '🎯', label: 'Pronos' },
-  { key: 'posiciones', href: '/posiciones', ic: '🏆', label: 'Tabla' },
+  { key: 'posiciones', href: '/posiciones', ic: '🐷', label: 'Tabla del Cerdo' },
   { key: 'simulador', href: '/simulador', ic: '📊', label: 'Posiciones' },
   { key: 'campeon', href: '/campeon', ic: '👑', label: 'Apuestas' },
   { key: 'reglas', href: '/bienvenida', ic: '🐔', label: 'Reglas' },

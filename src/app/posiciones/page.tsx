@@ -86,7 +86,7 @@ export default async function PosicionesPage() {
         <div className="appbar relative z-[1]">
           <div>
             <div className="kicker">⚽ {played} de 104 jugados</div>
-            <h2 className="display"><span className="trophy-float">🏆</span> Tabla de<br />posiciones</h2>
+            <h2 className="display"><span className="trophy-float">🐷</span> La tabla<br />del cerdo</h2>
           </div>
           <a href="/parche" className="pill" style={{ background: 'var(--yellow)' }}>{rows.length} 👥 →</a>
         </div>
