@@ -5,11 +5,11 @@ const TABS = [
   { key: 'fixture', href: '/', ic: '🎯', label: 'Pronos' },
   { key: 'posiciones', href: '/posiciones', ic: '🐷', label: 'Tabla del Cerdo' },
   { key: 'simulador', href: '/simulador', ic: '📊', label: 'Posiciones' },
-  { key: 'campeon', href: '/campeon', ic: '👑', label: 'Apuestas' },
+  { key: 'envivo', href: '/envivo', ic: '🔴', label: 'En Vivo' },
   { key: 'reglas', href: '/bienvenida', ic: '🐔', label: 'Reglas' },
 ] as const
 
-export default function Nav({ session, active }: { session: Session; active: 'fixture' | 'posiciones' | 'campeon' | 'admin' | 'reglas' | 'simulador' }) {
+export default function Nav({ session, active }: { session: Session; active: 'fixture' | 'posiciones' | 'campeon' | 'admin' | 'reglas' | 'simulador' | 'envivo' }) {
   return (
     <nav className="nav">
       {TABS.map((t) => (

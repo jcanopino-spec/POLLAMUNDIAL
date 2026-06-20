@@ -149,7 +149,7 @@ export default async function EnVivoPage() {
         </div>
         <div className="spacer" />
       </div>
-      <Nav session={session} active="fixture" />
+      <Nav session={session} active="envivo" />
     </div>
   )
 }

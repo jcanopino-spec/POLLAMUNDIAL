@@ -188,6 +188,9 @@ export default async function FixturePage({
             <p className="text-[11px] font-bold" style={{ color: '#cbbfae' }}>
               Pronostica con cabeza… ¡que el último pone el guaro y el cerdo de la Porcícola! 🐖
             </p>
+            <Link href="/campeon" className="inline-block mt-2 rounded-full px-3 py-1 text-[11px] font-extrabold" style={{ background: 'var(--yellow)', color: 'var(--ink)', textDecoration: 'none' }}>
+              👑 Ver mis apuestas grandes (finalistas y campeón)
+            </Link>
           </div>
         </div>
 
