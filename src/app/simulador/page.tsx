@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import { adminDb, type Match } from '@/lib/db'
 import { getSession } from '@/lib/session'
-import { groupTable } from '@/lib/groups'
+import { groupTable, topScorers } from '@/lib/groups'
 import { teamFlag, teamShort } from '@/lib/teams'
 import { syncResults } from '@/lib/sync'
 
@@ -26,8 +26,12 @@ export default async function GruposPage({ searchParams }: { searchParams: Promi
   await syncResults().catch(() => {})
 
   const db = adminDb()
-  const { data: matches } = await db.from('matches').select('*').not('group_name', 'is', null).order('kickoff_utc')
+  const [{ data: matches }, { data: allMatches }] = await Promise.all([
+    db.from('matches').select('*').not('group_name', 'is', null).order('kickoff_utc'),
+    db.from('matches').select('scorers').not('scorers', 'is', null),
+  ])
   const all = (matches ?? []) as Match[]
+  const goleadores = topScorers((allMatches ?? []) as Match[]).slice(0, 10)
 
   const params = await searchParams
   const sel = GROUPS.includes(params.g ?? '') ? params.g! : 'K'
@@ -125,6 +129,26 @@ export default async function GruposPage({ searchParams }: { searchParams: Promi
             )
           })}
         </div>
+
+        {/* Goleadores del Mundial */}
+        <div className="subhead">🥅 Tabla de goleadores</div>
+        {goleadores.length === 0 ? (
+          <p className="px-[18px] text-[12px] font-bold" style={{ color: 'var(--muted)' }}>Aún sin goles registrados… paciencia, que ya van a caer ⚽</p>
+        ) : (
+          <div className="mx-[14px] rounded-xl overflow-hidden" style={{ border: '2.5px solid var(--ink)' }}>
+            {goleadores.map((s, i) => (
+              <div key={s.name} className="flex items-center gap-2 px-3 py-2 text-[13px] font-bold" style={{ background: i === 0 ? 'rgba(255,194,46,.20)' : i % 2 ? 'var(--cream)' : 'var(--paper)', borderTop: i ? '1.5px solid var(--ink)' : 'none', color: 'var(--ink)' }}>
+                <span className="w-6 text-center font-extrabold">{i === 0 ? '👟' : i + 1}</span>
+                <span className="flex-1 truncate">{s.name}</span>
+                <span className="display text-base" style={{ color: 'var(--red-d)' }}>{s.goals}</span>
+                <span className="text-[10px]" style={{ color: 'var(--muted)' }}>{s.goals === 1 ? 'gol' : 'goles'}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="px-[18px] pt-2 text-[11px] font-bold" style={{ color: 'var(--muted)' }}>
+          🦅 MFito: “Yo pronostiqué que el goleador sería un arquero… nadie me creyó.”
+        </p>
 
         {/* Bullying de las mascotas */}
         <div className="castigo" style={{ background: 'var(--ink)' }}>

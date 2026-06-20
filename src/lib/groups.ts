@@ -38,3 +38,27 @@ export function groupTable(matches: Match[]): GroupRow[] {
   rows.sort((x, y) => y.pts - x.pts || y.dif - x.dif || y.gf - x.gf || x.team.localeCompare(y.team))
   return rows
 }
+
+// Tabla de goleadores: cuenta goles desde el texto 'scorers' de los partidos.
+// Formato por gol: "MIN NOMBRE [(pen)] [(a.p.)]" separados por coma. Los autogoles (a.p.) no suman.
+export type Scorer = { name: string; goals: number }
+
+export function topScorers(matches: Match[]): Scorer[] {
+  const count = new Map<string, number>()
+  for (const m of matches) {
+    if (!m.scorers) continue
+    for (const raw of m.scorers.split(',')) {
+      const t = raw.trim()
+      if (!t || /a\.p\./i.test(t)) continue // ignora autogoles
+      const name = t
+        .replace(/^\d+'?(\+\d+)?'?\s*/, '') // quita el minuto inicial
+        .replace(/\((pen|p)\)/gi, '')
+        .trim()
+      if (!name) continue
+      count.set(name, (count.get(name) ?? 0) + 1)
+    }
+  }
+  return [...count.entries()]
+    .map(([name, goals]) => ({ name, goals }))
+    .sort((a, b) => b.goals - a.goals || a.name.localeCompare(b.name))
+}
