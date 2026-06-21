@@ -276,12 +276,23 @@ export async function recomputePoints(): Promise<number> {
   const scoring = cfg.value as Scoring
   const byId = new Map(finished.map((m) => [m.id, m]))
 
-  const { data: preds } = await db
-    .from('predictions')
-    .select('participant_id, match_id, home_score, away_score, points')
-    .in('match_id', finished.map((m) => m.id))
+  // Trae TODOS los pronósticos de partidos finalizados con paginación
+  // (Supabase corta en 1000 filas; con 30 jugadores eso son <34 partidos).
+  const finishedIds = finished.map((m) => m.id)
+  const preds: { participant_id: string; match_id: number; home_score: number; away_score: number; points: number | null }[] = []
+  for (let from = 0; ; from += 1000) {
+    const { data: batch, error } = await db
+      .from('predictions')
+      .select('participant_id, match_id, home_score, away_score, points')
+      .in('match_id', finishedIds)
+      .range(from, from + 999)
+    if (error) throw error
+    if (!batch?.length) break
+    preds.push(...batch)
+    if (batch.length < 1000) break
+  }
 
-  const changed = (preds ?? []).flatMap((p) => {
+  const changed = preds.flatMap((p) => {
     const m = byId.get(p.match_id)!
     const pts = pointsFor(
       { home: p.home_score, away: p.away_score },
