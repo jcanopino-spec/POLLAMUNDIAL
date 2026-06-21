@@ -30,6 +30,7 @@ type EspnGame = {
   homeScore: number; awayScore: number
   state: 'pre' | 'in' | 'post'
   minute: string; scorers: string; winner: string | null
+  goalsMeta: { name: string; teamId: string; min: string }[]
   stats: MatchStats | null
   odds: { h: number; d: number; a: number; prov: string } | null
 }
@@ -59,8 +60,10 @@ async function fetchEspn(dateYmd: string): Promise<EspnGame[]> {
     const A = comps.find((x: { homeAway: string }) => x.homeAway === 'away')
     if (!H || !A) continue
     const state = ev.status?.type?.state as 'pre' | 'in' | 'post'
-    // goleadores en orden
+    // goleadores en orden (texto para mostrar + estructura con equipo para la tabla de goleadores)
     const goals: string[] = []
+    const goalsMeta: { name: string; teamId: string; min: string }[] = []
+    const teamById: Record<string, string> = { [H.team?.id]: H.team?.displayName ?? '', [A.team?.id]: A.team?.displayName ?? '' }
     for (const d of c.details ?? []) {
       if (!d.scoringPlay) continue
       const ath = (d.athletesInvolved ?? [])[0]
@@ -69,6 +72,7 @@ async function fetchEspn(dateYmd: string): Promise<EspnGame[]> {
       const og = d.ownGoal ? ' (a.p.)' : ''
       const pen = d.penaltyKick ? ' (pen)' : ''
       goals.push(`${min} ${nm}${og}${pen}`.trim())
+      if (!d.ownGoal) goalsMeta.push({ name: nm, teamId: teamById[d.team?.id] ?? '', min })
     }
     const minute = state === 'post' ? 'FINAL' : (ev.status?.displayClock || ev.status?.type?.shortDetail || 'EN VIVO')
 
@@ -114,7 +118,7 @@ async function fetchEspn(dateYmd: string): Promise<EspnGame[]> {
     out.push({
       home: H.team?.displayName ?? '', away: A.team?.displayName ?? '',
       homeScore: Number(H.score ?? 0), awayScore: Number(A.score ?? 0),
-      state, minute, scorers: goals.join(', '),
+      state, minute, scorers: goals.join(', '), goalsMeta,
       winner: H.winner ? (H.team?.displayName ?? null) : A.winner ? (A.team?.displayName ?? null) : null,
       stats, odds,
     })
@@ -152,12 +156,19 @@ async function syncFromEspn(db: ReturnType<typeof adminDb>): Promise<number> {
       : null
     // Cuotas: reorienta local/visita si ESPN los trae al revés
     const odds = g.odds ? (flip ? { ...g.odds, h: g.odds.a, a: g.odds.h } : g.odds) : null
+    // Goleadores con equipo mapeado al nombre de nuestra BD
+    const goals = g.goalsMeta.map((gm) => ({
+      name: gm.name,
+      team: canon(gm.teamId) === canon(m.home_team) ? m.home_team : canon(gm.teamId) === canon(m.away_team) ? m.away_team : gm.teamId,
+      min: gm.min,
+    }))
     await db.from('matches').update({
       home_score: g.state === 'pre' ? null : hs,
       away_score: g.state === 'pre' ? null : as,
       winner: g.winner ? (canon(g.winner) === canon(m.home_team) ? m.home_team : m.away_team) : m.winner,
       minute: g.state === 'pre' ? null : g.minute,
       scorers: g.scorers || null,
+      ...(goals.length ? { goals } : {}),
       stats,
       ...(odds ? { odds } : {}),
       status,

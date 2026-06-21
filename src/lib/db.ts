@@ -20,6 +20,7 @@ export type Match = {
   winner: string | null
   minute: string | null
   scorers: string | null
+  goals: { name: string; team: string | null; min: string }[] | null
   stats: MatchStats | null
   odds: MatchOdds | null
   status: 'scheduled' | 'live' | 'finished'

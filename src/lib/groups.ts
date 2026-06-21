@@ -39,26 +39,31 @@ export function groupTable(matches: Match[]): GroupRow[] {
   return rows
 }
 
-// Tabla de goleadores: cuenta goles desde el texto 'scorers' de los partidos.
-// Formato por gol: "MIN NOMBRE [(pen)] [(a.p.)]" separados por coma. Los autogoles (a.p.) no suman.
-export type Scorer = { name: string; goals: number }
+// Tabla de goleadores. Usa matches.goals (jsonb [{name, team, min}]) que trae el equipo;
+// si un partido viejo no lo tiene, cae al texto 'scorers' (sin equipo).
+export type Scorer = { name: string; goals: number; team: string | null }
 
 export function topScorers(matches: Match[]): Scorer[] {
-  const count = new Map<string, number>()
+  const acc = new Map<string, { goals: number; team: string | null }>()
+  const add = (name: string, team: string | null) => {
+    const cur = acc.get(name) ?? { goals: 0, team: null }
+    cur.goals++
+    if (team) cur.team = team
+    acc.set(name, cur)
+  }
   for (const m of matches) {
-    if (!m.scorers) continue
-    for (const raw of m.scorers.split(',')) {
-      const t = raw.trim()
-      if (!t || /a\.p\./i.test(t)) continue // ignora autogoles
-      const name = t
-        .replace(/^\d+'?(\+\d+)?'?\s*/, '') // quita el minuto inicial
-        .replace(/\((pen|p)\)/gi, '')
-        .trim()
-      if (!name) continue
-      count.set(name, (count.get(name) ?? 0) + 1)
+    if (Array.isArray(m.goals) && m.goals.length) {
+      for (const g of m.goals) if (g?.name) add(g.name, g.team ?? null)
+    } else if (m.scorers) {
+      for (const raw of m.scorers.split(',')) {
+        const t = raw.trim()
+        if (!t || /a\.p\./i.test(t)) continue
+        const name = t.replace(/^\d+'?(\+\d+)?'?\s*/, '').replace(/\((pen|p)\)/gi, '').trim()
+        if (name) add(name, null)
+      }
     }
   }
-  return [...count.entries()]
-    .map(([name, goals]) => ({ name, goals }))
+  return [...acc.entries()]
+    .map(([name, v]) => ({ name, goals: v.goals, team: v.team }))
     .sort((a, b) => b.goals - a.goals || a.name.localeCompare(b.name))
 }

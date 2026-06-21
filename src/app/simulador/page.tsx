@@ -137,12 +137,20 @@ export default async function GruposPage({ searchParams }: { searchParams: Promi
         ) : (
           <div className="mx-[14px] rounded-xl overflow-hidden" style={{ border: '2.5px solid var(--ink)' }}>
             {goleadores.map((s, i) => (
-              <div key={s.name} className="flex items-center gap-2 px-3 py-2 text-[13px] font-bold" style={{ background: i === 0 ? 'rgba(255,194,46,.20)' : i % 2 ? 'var(--cream)' : 'var(--paper)', borderTop: i ? '1.5px solid var(--ink)' : 'none', color: 'var(--ink)' }}>
+              <a
+                key={s.name}
+                href={`https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${encodeURIComponent(s.name)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-2 text-[13px] font-bold"
+                style={{ background: i === 0 ? 'rgba(255,194,46,.20)' : i % 2 ? 'var(--cream)' : 'var(--paper)', borderTop: i ? '1.5px solid var(--ink)' : 'none', color: 'var(--ink)', textDecoration: 'none' }}
+              >
                 <span className="w-6 text-center font-extrabold">{i === 0 ? '👟' : i + 1}</span>
-                <span className="flex-1 truncate">{s.name}</span>
+                <span className="text-base">{s.team ? teamFlag(s.team) : '⚽'}</span>
+                <span className="flex-1 truncate">{s.name} <span className="text-[10px]" style={{ color: 'var(--blue)' }}>↗</span></span>
                 <span className="display text-base" style={{ color: 'var(--red-d)' }}>{s.goals}</span>
                 <span className="text-[10px]" style={{ color: 'var(--muted)' }}>{s.goals === 1 ? 'gol' : 'goles'}</span>
-              </div>
+              </a>
             ))}
           </div>
         )}
