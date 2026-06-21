@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import AutoRefresh from '@/components/AutoRefresh'
 import GoalBuzz from '@/components/GoalBuzz'
-import { adminDb, type Match } from '@/lib/db'
+import { adminDb, fetchAllPredictions, type Match } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { multiplierFor, type Scoring } from '@/lib/scoring'
 import { teamFlag, teamShort, formatKickoff } from '@/lib/teams'
@@ -37,12 +37,13 @@ export default async function EnVivoPage() {
   await syncResults().catch(() => {})
 
   const db = adminDb()
-  const [{ data: matches }, { data: parts }, { data: cfg }, { data: preds }] = await Promise.all([
+  const [{ data: matches }, { data: parts }, { data: cfg }, predsRaw] = await Promise.all([
     db.from('matches').select('*').order('kickoff_utc'),
     db.from('participants').select('id, nickname, name, is_admin'),
     db.from('settings').select('value').eq('key', 'scoring').single(),
-    db.from('predictions').select('participant_id, match_id, home_score, away_score'),
+    fetchAllPredictions(db, 'participant_id, match_id, home_score, away_score'),
   ])
+  const preds = predsRaw as { participant_id: string; match_id: number; home_score: number; away_score: number }[]
   const all = (matches ?? []) as Match[]
   const scoring = cfg?.value as Scoring
   const nameOf = new Map((parts ?? []).filter((p) => !p.is_admin).map((p) => [p.id, p.nickname || p.name]))
@@ -50,7 +51,7 @@ export default async function EnVivoPage() {
   const next = all.find((m) => new Date(m.kickoff_utc).getTime() > Date.now())
 
   const predsByMatch = new Map<number, { nm: string; ph: number; pa: number }[]>()
-  for (const p of preds ?? []) {
+  for (const p of preds) {
     if (!nameOf.has(p.participant_id)) continue
     if (!predsByMatch.has(p.match_id)) predsByMatch.set(p.match_id, [])
     predsByMatch.get(p.match_id)!.push({ nm: nameOf.get(p.participant_id)!, ph: p.home_score, pa: p.away_score })

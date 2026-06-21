@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import { LiveScoreAdmin, ParticipantsAdmin, PicksReportAdmin, PlantillaAdmin, ProgressAdmin, ResultsAdmin, SyncAdmin, type PicksRow, type ProgressRow } from '@/components/AdminPanel'
-import { adminDb } from '@/lib/db'
+import { adminDb, fetchAllPredictions } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { formatKickoff } from '@/lib/teams'
 
@@ -13,13 +13,14 @@ export default async function AdminPage() {
   if (!session.isAdmin) redirect('/')
 
   const db = adminDb()
-  const [{ data: participants }, { data: matches }, { data: sync }, { data: allMatches }, { data: allPreds }] = await Promise.all([
+  const [{ data: participants }, { data: matches }, { data: sync }, { data: allMatches }, allPredsRaw] = await Promise.all([
     db.from('participants').select('id, name, is_admin, champion_team, finalist1, finalist2, must_change_pin, house_number, nickname').order('name'),
     db.from('matches').select('id, home_team, away_team, kickoff_utc, status').lte('kickoff_utc', new Date(Date.now() + 24 * 3600 * 1000).toISOString()).order('kickoff_utc', { ascending: false }),
     db.from('settings').select('value').eq('key', 'last_sync').maybeSingle(),
     db.from('matches').select('id, kickoff_utc'),
-    db.from('predictions').select('participant_id, match_id'),
+    fetchAllPredictions(db, 'participant_id, match_id'),
   ])
+  const allPreds = allPredsRaw as { participant_id: string; match_id: number }[]
 
   // Avance de pronósticos: solo jugadores (no admin), sobre partidos aún por jugar
   const now = Date.now()

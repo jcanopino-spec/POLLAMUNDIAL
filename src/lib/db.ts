@@ -7,6 +7,26 @@ export function adminDb() {
   })
 }
 
+// Trae TODOS los pronósticos paginando (Supabase corta en 1000 filas).
+// onlyScored = true → solo los que ya tienen puntos.
+export async function fetchAllPredictions(
+  db: ReturnType<typeof adminDb>,
+  columns = 'participant_id, match_id, home_score, away_score, points',
+  onlyScored = false
+) {
+  const out: Record<string, unknown>[] = []
+  for (let from = 0; ; from += 1000) {
+    let q = db.from('predictions').select(columns).range(from, from + 999)
+    if (onlyScored) q = q.not('points', 'is', null)
+    const { data, error } = await q
+    if (error) throw error
+    if (!data?.length) break
+    out.push(...(data as unknown as Record<string, unknown>[]))
+    if (data.length < 1000) break
+  }
+  return out
+}
+
 export type Match = {
   id: number
   round: number

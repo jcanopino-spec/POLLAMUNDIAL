@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
-import { adminDb, type Participant } from '@/lib/db'
+import { adminDb, fetchAllPredictions, type Participant } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { FINAL_MATCH_ID, type Scoring } from '@/lib/scoring'
 import { isPlaceholder, teamFlag, teamShort } from '@/lib/teams'
@@ -16,14 +16,15 @@ export default async function PosicionesPage() {
   await syncResults().catch(() => {})
 
   const db = adminDb()
-  const [{ data: participants }, { data: preds }, { data: finished }, { data: cfg }, { data: final }] =
+  const [{ data: participants }, predsAll, { data: finished }, { data: cfg }, { data: final }] =
     await Promise.all([
       db.from('participants').select('id, name, is_admin, champion_team, finalist1, finalist2, house_number, nickname'),
-      db.from('predictions').select('participant_id, match_id, home_score, away_score, points').not('points', 'is', null),
+      fetchAllPredictions(db, 'participant_id, match_id, home_score, away_score, points', true),
       db.from('matches').select('id, home_score, away_score').eq('status', 'finished'),
       db.from('settings').select('value').eq('key', 'scoring').single(),
       db.from('matches').select('home_team, away_team, winner, status').eq('id', FINAL_MATCH_ID).single(),
     ])
+  const preds = predsAll as { participant_id: string; match_id: number; home_score: number; away_score: number; points: number | null }[]
 
   const scoring = cfg?.value as Scoring
   const actual = new Map((finished ?? []).map((m) => [m.id, m]))
