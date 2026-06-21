@@ -114,12 +114,17 @@ export default async function EnVivoPage() {
               </div>
 
               {/* Resumen / chispa */}
-              <div className="rounded-xl px-3 py-2 my-2 text-center" style={{ border: '2px solid var(--ink)', background: 'var(--ink)' }}>
+              <div className="rounded-xl px-3 py-2 my-2 text-center" style={{ border: '2px solid var(--ink)', background: clavando.length === 0 ? '#3a1714' : 'var(--ink)' }}>
                 <p className="text-[12px] font-extrabold" style={{ color: 'var(--yellow)' }}>
                   {clavando.length > 0
                     ? `🎯 ¡${clavando.length} clavándola AHORA! (${clavando.slice(0, 3).map((p) => p.nm).join(', ')}${clavando.length > 3 ? '…' : ''})`
-                    : '😱 ¡NADIE va clavando el marcador!'}
+                    : '😱 ¡NADIE LE ESTÁ ACERTANDO AL MARCADOR!'}
                 </p>
+                {clavando.length === 0 && (
+                  <p className="text-[11px] font-extrabold mt-1" style={{ color: '#ff9a8a' }}>
+                    🐷 Cerdiño: “¡Pleno del cerdo! Los 30 igualitos de malos. Hago descuento por cantidad 😂”
+                  </p>
+                )}
                 <p className="text-[11px] font-bold mt-0.5" style={{ color: '#cbbfae' }}>
                   ⚰️ {muertos} ya con un pie en el cerdo · exacto vale {scoring.exact * mult} pts
                 </p>
