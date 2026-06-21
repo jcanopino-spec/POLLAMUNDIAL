@@ -28,7 +28,7 @@ export default async function GruposPage({ searchParams }: { searchParams: Promi
   const db = adminDb()
   const [{ data: matches }, { data: allMatches }] = await Promise.all([
     db.from('matches').select('*').not('group_name', 'is', null).order('kickoff_utc'),
-    db.from('matches').select('scorers').not('scorers', 'is', null),
+    db.from('matches').select('scorers, goals').not('scorers', 'is', null),
   ])
   const all = (matches ?? []) as Match[]
   const goleadores = topScorers((allMatches ?? []) as Match[]).slice(0, 10)
@@ -139,7 +139,7 @@ export default async function GruposPage({ searchParams }: { searchParams: Promi
             {goleadores.map((s, i) => (
               <a
                 key={s.name}
-                href={`https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${encodeURIComponent(s.name)}`}
+                href={`https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${encodeURIComponent(s.name.replace(/^[A-ZÁÉÍÓÚ]\.\s*/, '').trim())}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-3 py-2 text-[13px] font-bold"
