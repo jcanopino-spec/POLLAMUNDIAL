@@ -59,7 +59,7 @@ export default async function EnVivoPage() {
 
   return (
     <div className="shell">
-      {live.length > 0 && <AutoRefresh seconds={30} />}
+      {live.length > 0 && <AutoRefresh seconds={20} />}
       <div className="shell-content fade">
         <div className="appbar">
           <div>
@@ -150,7 +150,7 @@ export default async function EnVivoPage() {
           <div className="big">⚔️</div>
           <div className="t">
             <b style={{ color: 'var(--yellow)' }}>🐷 Cerdiño:</b> “Cada gol manda gente pa’ la guillotina. ¡Yo solo afilo el cuchillo!”
-            <br /><b style={{ color: 'var(--yellow)' }}>🦅 MFito:</b> “Refresca solo cada 30 seg. Quédate y sufre en vivo.”
+            <br /><b style={{ color: 'var(--yellow)' }}>🦅 MFito:</b> “Se refresca solito cada 20 seg. Quédate y sufre en vivo.”
           </div>
         </div>
         <div className="spacer" />

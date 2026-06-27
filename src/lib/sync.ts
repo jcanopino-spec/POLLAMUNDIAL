@@ -3,7 +3,11 @@ import { multiplierFor, pointsFor, type Scoring } from './scoring'
 
 const FEED = 'https://fixturedownload.com/feed/json/fifa-world-cup-2026'
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard'
-const STALE_MS = 5 * 60 * 1000 // re-sincronizar máximo cada 5 min
+// Throttle adaptivo: con partidos en curso sincroniza casi en tiempo real (30s),
+// si no hay nada jugándose se relaja a 5 min para no golpear ESPN en vano.
+const LIVE_STALE_MS = 30 * 1000
+const IDLE_STALE_MS = 5 * 60 * 1000
+const LIVE_WINDOW_MS = 2.5 * 60 * 60 * 1000 // un partido se considera "en juego" hasta 2.5h tras el pitazo
 
 // ---- ESPN: marcador en tiempo real + goleadores (fuente principal) ----
 // Normaliza nombres de equipo (ESPN → nombre del feed/BD) para emparejar partidos.
@@ -199,9 +203,18 @@ export async function syncResults(force = false): Promise<{ synced: boolean; fin
   const db = adminDb()
 
   if (!force) {
+    const now = Date.now()
+    // ¿Hay algún partido en su ventana de juego ahora mismo? (varios simultáneos cuentan igual)
+    const { data: playing } = await db
+      .from('matches')
+      .select('id')
+      .gte('kickoff_utc', new Date(now - LIVE_WINDOW_MS).toISOString())
+      .lte('kickoff_utc', new Date(now).toISOString())
+      .limit(1)
+    const stale = playing?.length ? LIVE_STALE_MS : IDLE_STALE_MS
     const { data } = await db.from('settings').select('value').eq('key', 'last_sync').maybeSingle()
     const last = data?.value?.at ? new Date(data.value.at).getTime() : 0
-    if (Date.now() - last < STALE_MS) return { synced: false }
+    if (now - last < stale) return { synced: false }
   }
 
   const res = await fetch(FEED, { cache: 'no-store' })
