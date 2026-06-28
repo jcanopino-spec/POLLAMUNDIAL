@@ -8,9 +8,18 @@ export type Scoring = {
   final_multiplier: number
   champion_bonus: number
   finalist_bonus: number
+  // Bono extra SOLO en fase de eliminación: acertar el nº de goles del equipo
+  // ganador (sin ser marcador exacto) suma estos puntos sobre el acierto de ganador.
+  winner_goals_bonus?: number
 }
 
 export const FINAL_MATCH_ID = 104
+
+// La fase de eliminación empieza en la ronda 4 (dieciseisavos). Ahí aplica el
+// bono por acertar el nº de goles del ganador.
+export function isKnockout(round: number): boolean {
+  return round >= 4
+}
 
 export function multiplierFor(matchId: number, round: number, s: Scoring): number {
   if (matchId === FINAL_MATCH_ID) return s.final_multiplier
@@ -23,10 +32,23 @@ export function pointsFor(
   pred: { home: number; away: number },
   actual: { home: number; away: number },
   mult: number,
-  s: Scoring
+  s: Scoring,
+  knockout = false
 ): number {
+  // 🎯 Marcador exacto
   if (pred.home === actual.home && pred.away === actual.away) return s.exact * mult
-  if (sign(pred.home - pred.away) === sign(actual.home - actual.away)) return s.outcome * mult
+  // ✅ Acertó el resultado (ganador o empate)
+  if (sign(pred.home - pred.away) === sign(actual.home - actual.away)) {
+    let pts = s.outcome * mult
+    // 🥈 Bono fase final: acertó el nº de goles del equipo ganador (no aplica a empates)
+    const bonus = s.winner_goals_bonus ?? 0
+    if (knockout && bonus && actual.home !== actual.away) {
+      const winnerGoals = Math.max(actual.home, actual.away)
+      const predWinnerGoals = actual.home > actual.away ? pred.home : pred.away
+      if (predWinnerGoals === winnerGoals) pts += bonus
+    }
+    return pts
+  }
   return 0
 }
 

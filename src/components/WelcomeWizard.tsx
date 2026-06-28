@@ -12,7 +12,7 @@ type Props = {
   picks: { finalist1: string | null; finalist2: string | null; champion: string | null }
   picksLocked: boolean
   openerLabel: string
-  scoring: { exact: number; outcome: number; champion_bonus: number; finalist_bonus: number }
+  scoring: { exact: number; outcome: number; champion_bonus: number; finalist_bonus: number; winner_goals_bonus?: number }
 }
 
 export default function WelcomeWizard(p: Props) {
@@ -65,6 +65,7 @@ export default function WelcomeWizard(p: Props) {
               <li>🔮 Pronostica el marcador de los <b>104 partidos</b>. Cámbialo las veces que quieras… <b>hasta que pite el árbitro</b>. Después ni llorando, ni con tutela, ni “se me cayó el internet”.</li>
               <li>🎯 Marcador exacto = <b style={{ color: 'var(--green)' }}>{p.scoring.exact} pts</b> · ✔️ acertar quién gana (o empate) = <b style={{ color: 'var(--green)' }}>{p.scoring.outcome} pts</b>.</li>
               <li>📈 Entre más avanza, más vale: 16avos <b>×2</b>, octavos <b>×3</b>, cuartos <b>×4</b>, semis <b>×5</b>, final <b>×6</b>. Un exacto en la final son <b style={{ color: 'var(--red)' }}>{p.scoring.exact * 6} puntazos</b>.</li>
+              <li>🥈 <b>¡NUEVO en fase de eliminación!</b> Si aciertas el <b>ganador</b> hay 3 formas de sumar (ejemplo en 16avos ×2): marcador exacto = <b style={{ color: 'var(--green)' }}>10</b>, acertar el <b>nº de goles del ganador</b> (sin ser exacto) = <b style={{ color: 'var(--green)' }}>8</b> (+{p.scoring.winner_goals_bonus ?? 2}), y solo el ganador = <b style={{ color: 'var(--green)' }}>6</b>.</li>
               <li>💰 Antes del pitazo inicial ({p.openerLabel}, hora Col) eliges tus <b>2 finalistas (+{p.scoring.finalist_bonus} c/u)</b> y tu <b>campeón (+{p.scoring.champion_bonus})</b>.</li>
               <li>🔮 ¿No sabes a quién apostarle? Usa el <b>Simulador</b> (pestaña 🔮): armas TU Mundial con el bracket real de la FIFA y compruebas que tu final <b>sí exista</b> — que no te pase que tus finalistas se maten en octavos 😅. Es opcional: si ya lo tienes claro, sáltalo y dale directo a pronosticar.</li>
               <li>📊 La tabla se actualiza solita. En eliminatorias cuenta el marcador con prórroga (los penales solo dicen quién pasa).</li>

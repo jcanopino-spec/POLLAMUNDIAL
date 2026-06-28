@@ -77,7 +77,8 @@ export default async function FixturePage({
     shownDays = groupByDay(all.filter((m) => m.round === round))
     title = ROUND_LABEL[round]
     const mult = scoring?.multipliers?.[String(round)] ?? 1
-    subtitle = `Exacto ${scoring.exact * mult} pts · resultado ${scoring.outcome * mult} pts${round === 8 ? ` · la final va ${scoring.exact * scoring.final_multiplier}/${scoring.outcome * scoring.final_multiplier}` : ''}`
+    const koBonus = round >= 4 ? scoring.winner_goals_bonus ?? 0 : 0
+    subtitle = `Exacto ${scoring.exact * mult} pts · resultado ${scoring.outcome * mult} pts${koBonus ? ` · +${koBonus} si aciertas los goles del ganador 🥈` : ''}${round === 8 ? ` · la final va ${scoring.exact * scoring.final_multiplier}/${scoring.outcome * scoring.final_multiplier}` : ''}`
   } else if (vista === 'grupo') {
     const grupo = GROUPS.includes(params.grupo ?? '') ? params.grupo! : 'K'
     const ms = all.filter((m) => m.group_name === grupo)

@@ -1,5 +1,5 @@
 import { adminDb, type MatchStats } from './db'
-import { multiplierFor, pointsFor, type Scoring } from './scoring'
+import { isKnockout, multiplierFor, pointsFor, type Scoring } from './scoring'
 
 const FEED = 'https://fixturedownload.com/feed/json/fifa-world-cup-2026'
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard'
@@ -311,7 +311,8 @@ export async function recomputePoints(): Promise<number> {
       { home: p.home_score, away: p.away_score },
       { home: m.home_score!, away: m.away_score! },
       multiplierFor(m.id, m.round, scoring),
-      scoring
+      scoring,
+      isKnockout(m.round)
     )
     return pts === p.points ? [] : [{ ...p, points: pts, updated_at: new Date().toISOString() }]
   })

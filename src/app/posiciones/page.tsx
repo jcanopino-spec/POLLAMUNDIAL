@@ -206,8 +206,8 @@ export default async function PosicionesPage() {
         )}
 
         <p className="px-[18px] pt-4 text-[11px] font-bold" style={{ color: 'var(--muted)' }}>
-          🎯 exacto {scoring?.exact ?? 5} · ✔️ resultado {scoring?.outcome ?? 3} (suben por fase) · ⭐ finalista +{scoring?.finalist_bonus ?? 15} ·
-          👑 campeón +{scoring?.champion_bonus ?? 30}. La tabla se actualiza solita al final de cada partido. La gallina 🐔 no acepta sobornos.
+          🎯 exacto {scoring?.exact ?? 5} · ✔️ resultado {scoring?.outcome ?? 3} (suben por fase) · 🥈 en eliminación, acertar el nº de goles del ganador +{scoring?.winner_goals_bonus ?? 2} ·
+          ⭐ finalista +{scoring?.finalist_bonus ?? 15} · 👑 campeón +{scoring?.champion_bonus ?? 30}. La tabla se actualiza solita al final de cada partido. La gallina 🐔 no acepta sobornos.
         </p>
         <div className="spacer" />
       </div>
