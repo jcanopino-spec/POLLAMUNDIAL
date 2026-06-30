@@ -6,6 +6,7 @@ import { adminDb, type Match } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { syncResults } from '@/lib/sync'
 import { teamFlag, teamShort, isPlaceholder } from '@/lib/teams'
+import { stadiumOf } from '@/lib/stadiums'
 import { BRACKET_COLUMNS, ROUND_SHORT } from '@/lib/bracket'
 
 const THIRD_ID = 103
@@ -30,15 +31,19 @@ function Slot({ team, score, isWin, show }: { team: string | null; score: number
 function MatchCard({ m }: { m: Match | undefined }) {
   if (!m) return <div className="bkr-match bkr-empty" />
   const show = m.status !== 'scheduled'
-  const meta =
+  const when =
     m.status === 'live' ? `🔴 EN VIVO${m.minute ? ` ${m.minute}` : ''}` :
-    m.status === 'finished' ? 'Final' :
-    new Date(m.kickoff_utc).toLocaleDateString('es-CO', { timeZone: 'America/Bogota', day: 'numeric', month: 'short' })
+    m.status === 'finished' ? '✅ Final' :
+    new Date(m.kickoff_utc).toLocaleDateString('es-CO', { timeZone: 'America/Bogota', weekday: 'short', day: 'numeric', month: 'short' })
+  const st = stadiumOf(m.venue)
   return (
-    <div className="bkr-match">
+    <div className={`bkr-match${m.status === 'live' ? ' is-live' : ''}`}>
+      <div className={`bkr-when${m.status === 'live' ? ' liv' : ''}`}>{when}</div>
       <Slot team={m.home_team} score={m.home_score} show={show} isWin={m.status === 'finished' && m.winner === m.home_team} />
       <Slot team={m.away_team} score={m.away_score} show={show} isWin={m.status === 'finished' && m.winner === m.away_team} />
-      <div className={`bkr-meta${m.status === 'live' ? ' liv' : ''}`}>{meta}</div>
+      <div className="bkr-venue">
+        {st ? <><span className="ve-st">🏟️ {st.nombre}</span><span className="ve-ci">📍 {st.ciudad}</span></> : <span className="ve-ci">{m.venue ?? ''}</span>}
+      </div>
     </div>
   )
 }
