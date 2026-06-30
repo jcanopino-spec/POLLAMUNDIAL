@@ -17,6 +17,19 @@ export const KO: Record<number, [number, number]> = {
   104: [101, 102],
 }
 
+// Etiqueta corta por ronda para el bracket "Camino a la final"
+export const ROUND_SHORT: Record<number, string> = { 4: '16vos', 5: '8vos', 6: '4tos', 7: 'Semis', 8: 'Final' }
+
+// Orden vertical de cada columna (arriba→abajo) para que las llaves aniden bien.
+// Derivado de KO: lado izquierdo desemboca en semifinal 101; derecho en 102.
+export const BRACKET_COLUMNS: { round: number; ids: number[] }[] = [
+  { round: 4, ids: [74, 77, 73, 75, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87] },
+  { round: 5, ids: [89, 90, 93, 94, 91, 92, 95, 96] },
+  { round: 6, ids: [97, 98, 99, 100] },
+  { round: 7, ids: [101, 102] },
+  { round: 8, ids: [104] },
+]
+
 export const ROUND_OF: Record<number, string> = Object.fromEntries([
   ...Object.keys(R32).map((m) => [m, 'dieciseisavos']),
   ...[89, 90, 91, 92, 93, 94, 95, 96].map((m) => [m, 'octavos']),

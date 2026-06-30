@@ -107,16 +107,18 @@ tabla.forEach(({p,total},i)=>{
   ws2.getCell(r,4).font={bold:true}
 })
 
-// ===== HOJA 3: CALENDARIO restante de grupos =====
-const ws3 = wb.addWorksheet('Faltan por jugar')
-;['P#','Grupo','Local','Visitante','Fecha (Col)','Estadio'].forEach((h,i)=>{ const c=ws3.getCell(1,i+1); c.value=h; c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:C.head}}; c.border=border })
-ws3.columns=[{width:6},{width:8},{width:16},{width:16},{width:26},{width:24}]
+// ===== HOJA 3: CALENDARIO restante de grupos (solo si aún falta jugar) =====
 const pend = matches.filter((m)=>m.status!=='finished')
-pend.forEach((m,i)=>{
-  const r=2+i
-  const dt=new Date(m.kickoff_utc).toLocaleString('es-CO',{timeZone:'America/Bogota',weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})
-  ;[m.id, m.group_name, `${fl(m.home_team)} ${es(m.home_team)}`, `${fl(m.away_team)} ${es(m.away_team)}`, dt, m.venue].forEach((v,c)=>{ const cell=ws3.getCell(r,c+1); cell.value=v; cell.border=border; if('Colombia'===m.home_team||'Colombia'===m.away_team) cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:C.yellow}} })
-})
+if (pend.length) {
+  const ws3 = wb.addWorksheet('Faltan por jugar')
+  ;['P#','Grupo','Local','Visitante','Fecha (Col)','Estadio'].forEach((h,i)=>{ const c=ws3.getCell(1,i+1); c.value=h; c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:C.head}}; c.border=border })
+  ws3.columns=[{width:6},{width:8},{width:16},{width:16},{width:26},{width:24}]
+  pend.forEach((m,i)=>{
+    const r=2+i
+    const dt=new Date(m.kickoff_utc).toLocaleString('es-CO',{timeZone:'America/Bogota',weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})
+    ;[m.id, m.group_name, `${fl(m.home_team)} ${es(m.home_team)}`, `${fl(m.away_team)} ${es(m.away_team)}`, dt, m.venue].forEach((v,c)=>{ const cell=ws3.getCell(r,c+1); cell.value=v; cell.border=border; if('Colombia'===m.home_team||'Colombia'===m.away_team) cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:C.yellow}} })
+  })
+}
 
 await wb.xlsx.writeFile('/tmp/pronosticos-polla.xlsx')
 console.log('OK · jugados:', finished.length, '· faltan:', pend.length, '· jugadores:', players.length)
