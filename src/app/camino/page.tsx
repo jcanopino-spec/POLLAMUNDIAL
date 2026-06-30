@@ -31,10 +31,13 @@ function Slot({ team, score, isWin, show }: { team: string | null; score: number
 function MatchCard({ m }: { m: Match | undefined }) {
   if (!m) return <div className="bkr-match bkr-empty" />
   const show = m.status !== 'scheduled'
+  const d = new Date(m.kickoff_utc)
+  const fecha = d.toLocaleDateString('es-CO', { timeZone: 'America/Bogota', weekday: 'short', day: 'numeric', month: 'short' })
+  const hora = d.toLocaleTimeString('es-CO', { timeZone: 'America/Bogota', hour: 'numeric', minute: '2-digit' })
   const when =
     m.status === 'live' ? `🔴 EN VIVO${m.minute ? ` ${m.minute}` : ''}` :
     m.status === 'finished' ? '✅ Final' :
-    new Date(m.kickoff_utc).toLocaleDateString('es-CO', { timeZone: 'America/Bogota', weekday: 'short', day: 'numeric', month: 'short' })
+    `${fecha} · 🕐 ${hora}`
   const st = stadiumOf(m.venue)
   return (
     <div className={`bkr-match${m.status === 'live' ? ' is-live' : ''}`}>
@@ -90,7 +93,7 @@ export default async function CaminoPage() {
         ) : (
           <p className="px-[18px] text-[12px] font-bold" style={{ color: 'var(--muted)' }}>
             El cuadro se llena solito con el <b>fixture real</b>: cada vez que una selección avanza, aparece en la siguiente llave.
-            Quedan <b style={{ color: 'var(--ink)' }}>{aliveCount}</b> selecciones con vida. 👉 deslízate para ver toda la ruta.
+            Quedan <b style={{ color: 'var(--ink)' }}>{aliveCount}</b> selecciones con vida. 🕐 <b>Todas las horas son de Colombia</b>, ¡pa’ que no se pierdan ni un partido! 👉 deslízate para ver toda la ruta.
           </p>
         )}
 
