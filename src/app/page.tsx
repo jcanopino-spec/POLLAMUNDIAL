@@ -123,6 +123,7 @@ export default async function FixturePage({
   return (
     <div className="shell">
       {params.hola === '1' && <WelcomeSplash apodo={me?.nickname || session.name} />}
+      {params.hola === 'invitado' && <WelcomeSplash apodo="Invitado" guest />}
       <div className="shell-content fade">
         <div className="appbar">
           <div>

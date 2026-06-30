@@ -22,6 +22,8 @@ export async function login(_prev: { error?: string } | null, formData: FormData
   }
 
   await createSession({ id: p.id, name: p.name, isAdmin: p.is_admin })
+  // Invitado (amigos chismosos): bienvenida con bulling especial, sin onboarding.
+  if (p.name.toLowerCase() === 'invitado') redirect('/?hola=invitado')
   // Primer ingreso (o picks pendientes) → bienvenida; si no, splash de entrada.
   // Los admin no participan; y si las apuestas ya están cerradas, no se exigen.
   const { data: lockCfg } = await db.from('settings').select('value').eq('key', 'picks_locked').maybeSingle()

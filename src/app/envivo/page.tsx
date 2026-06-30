@@ -46,7 +46,7 @@ export default async function EnVivoPage() {
   const preds = predsRaw as { participant_id: string; match_id: number; home_score: number; away_score: number }[]
   const all = (matches ?? []) as Match[]
   const scoring = cfg?.value as Scoring
-  const nameOf = new Map((parts ?? []).filter((p) => !p.is_admin).map((p) => [p.id, p.nickname || p.name]))
+  const nameOf = new Map((parts ?? []).filter((p) => !p.is_admin && p.name.toLowerCase() !== 'invitado').map((p) => [p.id, p.nickname || p.name]))
   const live = all.filter((m) => m.status === 'live')
   const next = all.find((m) => new Date(m.kickoff_utc).getTime() > Date.now())
 

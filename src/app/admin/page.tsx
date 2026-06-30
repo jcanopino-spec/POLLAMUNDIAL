@@ -31,7 +31,7 @@ export default async function AdminPage() {
     byUser.get(p.participant_id)!.add(p.match_id)
   }
   const progressRows: ProgressRow[] = (participants ?? [])
-    .filter((p) => !p.is_admin)
+    .filter((p) => !p.is_admin && p.name.toLowerCase() !== 'invitado')
     .map((p) => {
       const mine = byUser.get(p.id) ?? new Set<number>()
       const filledFuture = [...mine].filter((id) => futureIds.has(id)).length
@@ -50,7 +50,7 @@ export default async function AdminPage() {
 
   // Reporte de apuestas grandes: completas primero, luego pendientes
   const picksRows: PicksRow[] = (participants ?? [])
-    .filter((p) => !p.is_admin)
+    .filter((p) => !p.is_admin && p.name.toLowerCase() !== 'invitado')
     .map((p) => ({
       id: p.id,
       display: p.nickname || p.name,

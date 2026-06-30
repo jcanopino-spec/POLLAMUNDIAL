@@ -18,7 +18,7 @@ export default async function ParchePage() {
     .select('id, name, nickname, house_number, is_admin')
     .order('nickname')
 
-  const vecinos = (participants ?? []).filter((p) => !p.is_admin)
+  const vecinos = (participants ?? []).filter((p) => !p.is_admin && p.name.toLowerCase() !== 'invitado')
 
   return (
     <div className="shell">
