@@ -6,6 +6,7 @@ import {
   deleteParticipant,
   forceSyncNow,
   resetPin,
+  runAuditNow,
   setLiveScore,
   setManualResult,
   updateParticipantInfo,
@@ -407,5 +408,40 @@ export function SyncAdmin({ lastSync }: { lastSync: string | null }) {
       </button>
       {msg && <p className="text-xs font-bold mt-2" style={{ color: 'var(--ink)' }}>{msg}</p>}
     </section>
+  )
+}
+
+export type AuditData = { ok: boolean; ranAt: string; problems: string[] } | undefined
+
+export function AuditAdmin({ audit, auditWhen }: { audit: AuditData; auditWhen: string | null }) {
+  const [msg, setMsg] = useState('')
+  const [busy, startTransition] = useTransition()
+  const ok = audit?.ok ?? true
+  return (
+    <div className="mx-[18px] mb-3 rounded-xl px-3 py-2.5" style={{ border: '2.5px solid var(--ink)', background: !audit ? 'var(--cream-2)' : ok ? '#E3F4E9' : '#FCE0DC' }}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[13px] font-extrabold" style={{ color: !audit ? 'var(--muted)' : ok ? 'var(--green)' : 'var(--red-d)' }}>
+          {!audit ? '🔎 Sin auditar todavía' : ok ? '✅ Puntajes sanos' : `⛔ ${audit.problems.length} problema(s)`}
+        </p>
+        <button
+          disabled={busy}
+          className="savebtn"
+          style={{ width: 'auto', padding: '6px 12px', fontSize: 12, background: 'var(--ink)' }}
+          onClick={() =>
+            startTransition(async () => {
+              const r = await runAuditNow()
+              setMsg(('error' in r && r.error) || ('ok' in r && r.ok) || '')
+            })
+          }
+        >
+          {busy ? 'AUDITANDO…' : '🔍 AUDITAR AHORA'}
+        </button>
+      </div>
+      {audit && !audit.ok && audit.problems.slice(0, 4).map((p, i) => (
+        <p key={i} className="text-[11px] font-bold mt-0.5" style={{ color: 'var(--ink)' }}>· {p}</p>
+      ))}
+      {auditWhen && <p className="text-[10px] font-bold mt-1" style={{ color: 'var(--muted)' }}>Última auditoría · {auditWhen}</p>}
+      {msg && <p className="text-[11px] font-bold mt-1" style={{ color: 'var(--ink)' }}>{msg}</p>}
+    </div>
   )
 }

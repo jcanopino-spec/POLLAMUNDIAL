@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
-import { LiveScoreAdmin, ParticipantsAdmin, PicksReportAdmin, PlantillaAdmin, ProgressAdmin, ResultsAdmin, SyncAdmin, type PicksRow, type ProgressRow } from '@/components/AdminPanel'
+import { AuditAdmin, LiveScoreAdmin, ParticipantsAdmin, PicksReportAdmin, PlantillaAdmin, ProgressAdmin, ResultsAdmin, SyncAdmin, type PicksRow, type ProgressRow } from '@/components/AdminPanel'
 import { adminDb, fetchAllPredictions } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { formatKickoff } from '@/lib/teams'
@@ -84,17 +84,7 @@ export default async function AdminPage() {
           </div>
           <span className="pill" style={{ background: 'var(--yellow)' }}>🐔 jefe</span>
         </div>
-        {audit && (
-          <div className="mx-[18px] mb-3 rounded-xl px-3 py-2.5" style={{ border: '2.5px solid var(--ink)', background: audit.ok ? '#E3F4E9' : '#FCE0DC' }}>
-            <p className="text-[13px] font-extrabold" style={{ color: audit.ok ? 'var(--green)' : 'var(--red-d)' }}>
-              {audit.ok ? '✅ Puntajes sanos' : `⛔ ${audit.problems.length} problema(s) en los puntajes`}
-            </p>
-            {!audit.ok && audit.problems.slice(0, 4).map((p, i) => (
-              <p key={i} className="text-[11px] font-bold mt-0.5" style={{ color: 'var(--ink)' }}>· {p}</p>
-            ))}
-            {auditWhen && <p className="text-[10px] font-bold mt-1" style={{ color: 'var(--muted)' }}>Auditoría automática · {auditWhen}</p>}
-          </div>
-        )}
+        <AuditAdmin audit={audit} auditWhen={auditWhen} />
         <PicksReportAdmin rows={picksRows} />
         <ProgressAdmin rows={progressRows} totalMatches={(allMatches ?? []).length} />
         <ParticipantsAdmin participants={participants ?? []} myId={session.id} />

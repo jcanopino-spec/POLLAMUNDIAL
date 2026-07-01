@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import { adminDb } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { recomputePoints, syncResults } from '@/lib/sync'
+import { runAudit } from '@/lib/audit'
 
 const MAX_PARTICIPANTS = 100
 const PIN_GENERICO = '2026'
@@ -149,5 +150,19 @@ export async function forceSyncNow() {
     return { ok: `Sincronizado: ${r.finished ?? 0} partidos finalizados.` }
   } catch {
     return { error: 'El feed de resultados no respondió. Intenta de nuevo.' }
+  }
+}
+
+export async function runAuditNow() {
+  await requireAdmin()
+  try {
+    const result = await runAudit()
+    await adminDb().from('settings').upsert({ key: 'last_audit', value: result })
+    revalidatePath('/admin')
+    return result.ok
+      ? { ok: `✅ Puntajes sanos (${result.stats.preds} pronósticos, ${result.stats.tablePlayers} jugadores).` }
+      : { error: `⛔ ${result.problems.length} problema(s): ${result.problems.slice(0, 3).join(' · ')}` }
+  } catch {
+    return { error: 'No se pudo correr la auditoría. Intenta de nuevo.' }
   }
 }
