@@ -13,13 +13,18 @@ export default async function AdminPage() {
   if (!session.isAdmin) redirect('/')
 
   const db = adminDb()
-  const [{ data: participants }, { data: matches }, { data: sync }, { data: allMatches }, allPredsRaw] = await Promise.all([
+  const [{ data: participants }, { data: matches }, { data: sync }, { data: allMatches }, allPredsRaw, { data: auditRow }] = await Promise.all([
     db.from('participants').select('id, name, is_admin, champion_team, finalist1, finalist2, must_change_pin, house_number, nickname').order('name'),
     db.from('matches').select('id, home_team, away_team, kickoff_utc, status').lte('kickoff_utc', new Date(Date.now() + 24 * 3600 * 1000).toISOString()).order('kickoff_utc', { ascending: false }),
     db.from('settings').select('value').eq('key', 'last_sync').maybeSingle(),
     db.from('matches').select('id, kickoff_utc'),
     fetchAllPredictions(db, 'participant_id, match_id'),
+    db.from('settings').select('value').eq('key', 'last_audit').maybeSingle(),
   ])
+  const audit = auditRow?.value as { ok: boolean; ranAt: string; problems: string[] } | undefined
+  const auditWhen = audit?.ranAt
+    ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(new Date(audit.ranAt))
+    : null
   const allPreds = allPredsRaw as { participant_id: string; match_id: number }[]
 
   // Avance de pronósticos: solo jugadores (no admin), sobre partidos aún por jugar
@@ -79,6 +84,17 @@ export default async function AdminPage() {
           </div>
           <span className="pill" style={{ background: 'var(--yellow)' }}>🐔 jefe</span>
         </div>
+        {audit && (
+          <div className="mx-[18px] mb-3 rounded-xl px-3 py-2.5" style={{ border: '2.5px solid var(--ink)', background: audit.ok ? '#E3F4E9' : '#FCE0DC' }}>
+            <p className="text-[13px] font-extrabold" style={{ color: audit.ok ? 'var(--green)' : 'var(--red-d)' }}>
+              {audit.ok ? '✅ Puntajes sanos' : `⛔ ${audit.problems.length} problema(s) en los puntajes`}
+            </p>
+            {!audit.ok && audit.problems.slice(0, 4).map((p, i) => (
+              <p key={i} className="text-[11px] font-bold mt-0.5" style={{ color: 'var(--ink)' }}>· {p}</p>
+            ))}
+            {auditWhen && <p className="text-[10px] font-bold mt-1" style={{ color: 'var(--muted)' }}>Auditoría automática · {auditWhen}</p>}
+          </div>
+        )}
         <PicksReportAdmin rows={picksRows} />
         <ProgressAdmin rows={progressRows} totalMatches={(allMatches ?? []).length} />
         <ParticipantsAdmin participants={participants ?? []} myId={session.id} />

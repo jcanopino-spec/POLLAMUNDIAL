@@ -143,6 +143,15 @@ async function main() {
     }
   }
 
+  // Persistir resultado para el banner de Admin (mismo formato que el endpoint)
+  const result = {
+    ok: problems.length === 0,
+    ranAt: new Date().toISOString(),
+    problems,
+    stats: { preds: preds.length, finishedNoScore: badFin.length, scoredButScheduled: weird.length, miscalculated: mis, nullPoints: nulls, duplicates: dups.length, tablePlayers: rank.length },
+  }
+  await db.from('settings').upsert({ key: 'last_audit', value: result })
+
   log('\n════════════════════════════════════════════════════════')
   if (problems.length === 0) {
     log('  ✅ TODO SANO — no hay errores en los puntajes.')
