@@ -25,6 +25,8 @@ function canon(name: string): string {
     'cape verde': 'cabo verde', 'cabo verde': 'cabo verde',
     'dr congo': 'congo dr', 'congo dr': 'congo dr', 'democratic republic of the congo': 'congo dr',
     curacao: 'curacao',
+    // ESPN escribe "Bosnia-Herzegovina" (sin "and"); al quitar el guion queda "bosniaherzegovina".
+    'bosnia and herzegovina': 'bosnia', bosniaherzegovina: 'bosnia', 'bosnia herzegovina': 'bosnia',
   }
   return alias[n] ?? n
 }
