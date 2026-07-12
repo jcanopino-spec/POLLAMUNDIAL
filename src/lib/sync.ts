@@ -1,5 +1,5 @@
 import { adminDb, type MatchStats } from './db'
-import { isKnockout, multiplierFor, pointsFor, type Scoring } from './scoring'
+import { isKnockout, multiplierFor, pointsFor, scorerBonus, scorerRoundApplies, type Scoring } from './scoring'
 
 const FEED = 'https://fixturedownload.com/feed/json/fifa-world-cup-2026'
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard'
@@ -285,7 +285,7 @@ export async function recomputePoints(): Promise<number> {
 
   const [{ data: cfg }, { data: finished }] = await Promise.all([
     db.from('settings').select('value').eq('key', 'scoring').single(),
-    db.from('matches').select('id, round, home_score, away_score').eq('status', 'finished'),
+    db.from('matches').select('id, round, home_score, away_score, goals').eq('status', 'finished'),
   ])
   if (!cfg || !finished?.length) return 0
   const scoring = cfg.value as Scoring
@@ -294,11 +294,11 @@ export async function recomputePoints(): Promise<number> {
   // Trae TODOS los pronósticos de partidos finalizados con paginación
   // (Supabase corta en 1000 filas; con 30 jugadores eso son <34 partidos).
   const finishedIds = finished.map((m) => m.id)
-  const preds: { participant_id: string; match_id: number; home_score: number; away_score: number; points: number | null }[] = []
+  const preds: { participant_id: string; match_id: number; home_score: number; away_score: number; points: number | null; pred_scorers: string[] | null }[] = []
   for (let from = 0; ; from += 1000) {
     const { data: batch, error } = await db
       .from('predictions')
-      .select('participant_id, match_id, home_score, away_score, points')
+      .select('participant_id, match_id, home_score, away_score, points, pred_scorers')
       .in('match_id', finishedIds)
       .range(from, from + 999)
     if (error) throw error
@@ -309,13 +309,15 @@ export async function recomputePoints(): Promise<number> {
 
   const changed = preds.flatMap((p) => {
     const m = byId.get(p.match_id)!
-    const pts = pointsFor(
+    let pts = pointsFor(
       { home: p.home_score, away: p.away_score },
       { home: m.home_score!, away: m.away_score! },
       multiplierFor(m.id, m.round, scoring),
       scoring,
       isKnockout(m.round)
     )
+    // Bono por acertar goleadores (semifinales en adelante).
+    if (scorerRoundApplies(m.round)) pts += scorerBonus(p.pred_scorers, m.goals, scoring)
     return pts === p.points ? [] : [{ ...p, points: pts, updated_at: new Date().toISOString() }]
   })
 

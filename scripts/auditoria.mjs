@@ -44,26 +44,36 @@ async function main() {
   // Trae TODOS los pronósticos paginando (Supabase corta en 1000 filas).
   const preds = []
   for (let f = 0; ; f += 1000) {
-    const { data } = await db.from('predictions').select('participant_id,match_id,home_score,away_score,points').range(f, f + 999)
+    const { data } = await db.from('predictions').select('participant_id,match_id,home_score,away_score,points,pred_scorers').range(f, f + 999)
     if (!data?.length) break
     preds.push(...data)
     if (data.length < 1000) break
   }
 
   const mult = (id, r) => (id === FINAL_ID ? s.final_multiplier : (s.multipliers[String(r)] ?? 1))
+  const norm = (x) => x.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+  function scorerBonus(p, m) {
+    const b = s.scorer_bonus ?? 0
+    if (m.round < 7 || !b || !p.pred_scorers?.length || !m.goals?.length) return 0
+    const pred = new Set(p.pred_scorers.map(norm))
+    const real = new Set(m.goals.map((g) => norm(g.name)))
+    let hits = 0
+    for (const r of real) if (pred.has(r)) hits++
+    return hits * b
+  }
   function pointsFor(p, m) {
-    if (p.home_score === m.home_score && p.away_score === m.away_score) return s.exact * mult(m.id, m.round)
-    if (sign(p.home_score - p.away_score) === sign(m.home_score - m.away_score)) {
-      let pts = s.outcome * mult(m.id, m.round)
+    let base = 0
+    if (p.home_score === m.home_score && p.away_score === m.away_score) base = s.exact * mult(m.id, m.round)
+    else if (sign(p.home_score - p.away_score) === sign(m.home_score - m.away_score)) {
+      base = s.outcome * mult(m.id, m.round)
       const bonus = s.winner_goals_bonus ?? 0
       if (isKO(m.round) && bonus && m.home_score !== m.away_score) {
         const wg = Math.max(m.home_score, m.away_score)
         const pwg = m.home_score > m.away_score ? p.home_score : p.away_score
-        if (pwg === wg) pts += bonus
+        if (pwg === wg) base += bonus
       }
-      return pts
     }
-    return 0
+    return base + scorerBonus(p, m) // el bono de goleadores es adicional e independiente del marcador
   }
 
   const problems = []

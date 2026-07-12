@@ -61,6 +61,7 @@ export type Prediction = {
   home_score: number
   away_score: number
   points: number | null
+  pred_scorers: string[] | null
 }
 
 export type Participant = {

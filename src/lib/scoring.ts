@@ -11,6 +11,9 @@ export type Scoring = {
   // Bono extra SOLO en fase de eliminación: acertar el nº de goles del equipo
   // ganador (sin ser marcador exacto) suma estos puntos sobre el acierto de ganador.
   winner_goals_bonus?: number
+  // Bono por acertar AUTORES de los goles (desde semifinales): +N por cada
+  // goleador real que el jugador haya pronosticado.
+  scorer_bonus?: number
 }
 
 export const FINAL_MATCH_ID = 104
@@ -19,6 +22,31 @@ export const FINAL_MATCH_ID = 104
 // bono por acertar el nº de goles del ganador.
 export function isKnockout(round: number): boolean {
   return round >= 4
+}
+
+// El bono por acertar goleadores aplica desde semifinales (ronda 7): semis,
+// tercer puesto y final.
+export function scorerRoundApplies(round: number): boolean {
+  return round >= 7
+}
+
+function normName(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+}
+
+// +scorer_bonus por cada goleador REAL (distinto) que el jugador haya pronosticado.
+export function scorerBonus(
+  predScorers: string[] | null | undefined,
+  actualGoals: { name: string }[] | null | undefined,
+  s: Scoring
+): number {
+  const bonus = s.scorer_bonus ?? 0
+  if (!bonus || !predScorers?.length || !actualGoals?.length) return 0
+  const pred = new Set(predScorers.map(normName).filter(Boolean))
+  const real = new Set(actualGoals.map((g) => normName(g.name)).filter(Boolean))
+  let hits = 0
+  for (const r of real) if (pred.has(r)) hits++
+  return hits * bonus
 }
 
 export function multiplierFor(matchId: number, round: number, s: Scoring): number {

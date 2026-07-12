@@ -6,6 +6,7 @@ import { adminDb, type Match } from '@/lib/db'
 import { getSession } from '@/lib/session'
 import { ROUND_LABEL, type Scoring } from '@/lib/scoring'
 import { formatKickoff, teamFlag, teamShort } from '@/lib/teams'
+import { rosterFor } from '@/lib/rosters'
 import { syncResults } from '@/lib/sync'
 import { Countdown } from '@/components/Fiesta'
 import WelcomeSplash from '@/components/WelcomeSplash'
@@ -288,6 +289,11 @@ export default async function FixturePage({
                   initialAway={pred?.away_score ?? null}
                   points={pred?.points ?? null}
                   maxExact={(scoring?.exact ?? 5) * (m.id === 104 ? scoring.final_multiplier : (scoring?.multipliers?.[String(m.round)] ?? 1))}
+                  round={m.round}
+                  homeRoster={rosterFor(m.home_team)}
+                  awayRoster={rosterFor(m.away_team)}
+                  initialScorers={pred?.pred_scorers ?? []}
+                  scorerBonus={scoring?.scorer_bonus ?? 5}
                 />
               )
             })}

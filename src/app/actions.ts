@@ -3,9 +3,11 @@
 import { revalidatePath } from 'next/cache'
 import { adminDb } from '@/lib/db'
 import { getSession } from '@/lib/session'
+import { rosterFor } from '@/lib/rosters'
 
 // Guarda/actualiza un pronóstico. Bloqueo server-side: rechaza si el partido ya inició.
-export async function savePrediction(matchId: number, home: number, away: number) {
+// `scorers` = goleadores pronosticados (solo se usan/valen desde semifinales).
+export async function savePrediction(matchId: number, home: number, away: number, scorers: string[] = []) {
   const session = await getSession()
   if (!session) return { error: 'Sesión expirada. Vuelve a entrar.' }
   if (!Number.isInteger(home) || !Number.isInteger(away) || home < 0 || away < 0 || home > 99 || away > 99) {
@@ -13,17 +15,22 @@ export async function savePrediction(matchId: number, home: number, away: number
   }
 
   const db = adminDb()
-  const { data: match } = await db.from('matches').select('kickoff_utc').eq('id', matchId).single()
+  const { data: match } = await db.from('matches').select('kickoff_utc, home_team, away_team').eq('id', matchId).single()
   if (!match) return { error: 'Partido no encontrado.' }
   if (new Date(match.kickoff_utc).getTime() <= Date.now()) {
     return { error: '⛔ Ya pitó el árbitro: pronóstico cerrado. Ni llorando ni con tutela 😅' }
   }
+
+  // Solo se guardan goleadores de las plantillas de los dos equipos (máx. 8).
+  const valid = new Set([...rosterFor(match.home_team), ...rosterFor(match.away_team)])
+  const cleanScorers = [...new Set((scorers ?? []).filter((s) => valid.has(s)))].slice(0, 8)
 
   const { error } = await db.from('predictions').upsert({
     participant_id: session.id,
     match_id: matchId,
     home_score: home,
     away_score: away,
+    pred_scorers: cleanScorers,
     updated_at: new Date().toISOString(),
   })
   if (error) return { error: 'No se pudo guardar. Intenta de nuevo.' }

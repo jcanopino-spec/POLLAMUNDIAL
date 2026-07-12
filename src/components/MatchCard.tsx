@@ -120,6 +120,11 @@ type Props = {
   initialAway: number | null
   points: number | null
   maxExact: number
+  round: number
+  homeRoster: string[]
+  awayRoster: string[]
+  initialScorers: string[]
+  scorerBonus: number
 }
 
 // Estadísticas sabrosas del partido: barras comparativas + asistencia + tarjetas
@@ -169,18 +174,70 @@ function Stepper({ val, set, disabled, label }: { val: number; set: (v: number) 
   )
 }
 
+// Selector de goleadores (lista desplegable por selección) — desde semifinales.
+function ScorerPicker({
+  homeTeam, awayTeam, homeRoster, awayRoster, selected, onAdd, onRemove, disabled, bonus,
+}: {
+  homeTeam: string; awayTeam: string; homeRoster: string[]; awayRoster: string[]
+  selected: string[]; onAdd: (n: string) => void; onRemove: (n: string) => void; disabled: boolean; bonus: number
+}) {
+  const avail = (roster: string[]) => roster.filter((n) => !selected.includes(n))
+  return (
+    <div className="scorers">
+      <p className="sc-title">⚽ ¿Quién marca? <span>+{bonus} por acierto 🌶️</span></p>
+      {!disabled && selected.length < 8 && (
+        <select
+          className="sc-select"
+          value=""
+          onChange={(e) => { onAdd(e.target.value); e.currentTarget.value = '' }}
+        >
+          <option value="">➕ Agregar goleador…</option>
+          <optgroup label={`${teamFlag(homeTeam)} ${teamShort(homeTeam)}`}>
+            {avail(homeRoster).map((n) => <option key={n} value={n}>{n}</option>)}
+          </optgroup>
+          <optgroup label={`${teamFlag(awayTeam)} ${teamShort(awayTeam)}`}>
+            {avail(awayRoster).map((n) => <option key={n} value={n}>{n}</option>)}
+          </optgroup>
+        </select>
+      )}
+      <div className="sc-chips">
+        {selected.length === 0 && <span className="sc-empty">Sin goleadores (opcional, pero suma 🤑)</span>}
+        {selected.map((n) => {
+          const team = homeRoster.includes(n) ? homeTeam : awayTeam
+          return (
+            <span key={n} className="sc-chip">
+              {teamFlag(team)} {n}
+              {!disabled && <button type="button" aria-label={`Quitar ${n}`} onClick={() => onRemove(n)}>✕</button>}
+            </span>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function MatchCard(p: Props) {
   const [saved, setSaved] = useState<{ home: number; away: number } | null>(
     p.initialHome != null ? { home: p.initialHome, away: p.initialAway ?? 0 } : null
   )
   const [home, setHome] = useState(saved?.home ?? 0)
   const [away, setAway] = useState(saved?.away ?? 0)
+  const [scorers, setScorers] = useState<string[]>(p.initialScorers ?? [])
   const [editing, setEditing] = useState(saved == null)
   const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
 
   const esColombia = p.home === 'Colombia' || p.away === 'Colombia'
-  const dirty = !saved || saved.home !== home || saved.away !== away
+  // El picante de goleadores: desde semifinales y solo si ya se conocen los dos equipos.
+  const goleadoresOn = p.round >= 7 && p.homeRoster.length > 0 && p.awayRoster.length > 0
+  const sameScorers = JSON.stringify([...(p.initialScorers ?? [])].sort()) === JSON.stringify([...scorers].sort())
+  const dirty = !saved || saved.home !== home || saved.away !== away || !sameScorers
+
+  function addScorer(nm: string) {
+    if (!nm || scorers.includes(nm) || scorers.length >= 8) return
+    setScorers([...scorers, nm]); setError('')
+  }
+  function removeScorer(nm: string) { setScorers(scorers.filter((s) => s !== nm)); setError('') }
 
   function onButton() {
     if (p.locked || pending) return
@@ -190,7 +247,7 @@ export default function MatchCard(p: Props) {
       return
     }
     startTransition(async () => {
-      const res = await savePrediction(p.matchId, home, away)
+      const res = await savePrediction(p.matchId, home, away, goleadoresOn ? scorers : [])
       if (res?.error) {
         setError(res.error)
       } else {
@@ -231,6 +288,15 @@ export default function MatchCard(p: Props) {
             </span>
           )}
         </div>
+        {p.round >= 7 && (p.initialScorers?.length ?? 0) > 0 && (
+          <div className="sc-chips" style={{ padding: '0 12px 10px' }}>
+            <span className="sc-empty">⚽ Tus goleadores:</span>
+            {p.initialScorers.map((n) => {
+              const hit = !!p.scorers && p.scorers.includes(n)
+              return <span key={n} className={`sc-chip${hit ? ' ok' : ' no'}`}>{n} {hit ? '✅' : '❌'}</span>
+            })}
+          </div>
+        )}
       </div>
     )
   }
@@ -260,6 +326,14 @@ export default function MatchCard(p: Props) {
         </div>
         <div className="mteam"><div className="fl">{teamFlag(p.away)} <Mfito side="r" /></div><div className="nm">{teamShort(p.away)}</div></div>
       </div>
+      {goleadoresOn && (
+        <ScorerPicker
+          homeTeam={p.home} awayTeam={p.away}
+          homeRoster={p.homeRoster} awayRoster={p.awayRoster}
+          selected={scorers} onAdd={addScorer} onRemove={removeScorer}
+          disabled={p.locked || !editing} bonus={p.scorerBonus}
+        />
+      )}
       <div className="mfoot">
         {p.locked ? (
           <div className="predbadge" style={{ margin: 0 }}>

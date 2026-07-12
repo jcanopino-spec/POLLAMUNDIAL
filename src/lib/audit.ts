@@ -1,5 +1,5 @@
 import { adminDb, fetchAllPredictions, type Match } from './db'
-import { isKnockout, multiplierFor, pointsFor, type Scoring } from './scoring'
+import { isKnockout, multiplierFor, pointsFor, scorerBonus, scorerRoundApplies, type Scoring } from './scoring'
 
 export type AuditResult = {
   ok: boolean
@@ -28,8 +28,8 @@ export async function runAudit(): Promise<AuditResult> {
   const s = cfg!.value as Scoring
   const all = (matches ?? []) as Match[]
   const byId = new Map(all.map((m) => [m.id, m]))
-  const preds = (await fetchAllPredictions(db, 'participant_id, match_id, home_score, away_score, points')) as {
-    participant_id: string; match_id: number; home_score: number; away_score: number; points: number | null
+  const preds = (await fetchAllPredictions(db, 'participant_id, match_id, home_score, away_score, points, pred_scorers')) as {
+    participant_id: string; match_id: number; home_score: number; away_score: number; points: number | null; pred_scorers: string[] | null
   }[]
 
   const problems: string[] = []
@@ -50,13 +50,14 @@ export async function runAudit(): Promise<AuditResult> {
     if (!m) continue
     if (m.status === 'finished' && m.home_score != null && m.away_score != null) {
       if (p.points == null) nullPoints++
-      const should = pointsFor(
+      let should = pointsFor(
         { home: p.home_score, away: p.away_score },
         { home: m.home_score, away: m.away_score },
         multiplierFor(m.id, m.round, s),
         s,
         isKnockout(m.round)
       )
+      if (scorerRoundApplies(m.round)) should += scorerBonus(p.pred_scorers, m.goals, s)
       if ((p.points ?? 0) !== should) {
         miscalculated++
         if (detail.length < 15) detail.push(`m${m.id} ${p.home_score}-${p.away_score}: tiene ${p.points}, debe ${should}`)
