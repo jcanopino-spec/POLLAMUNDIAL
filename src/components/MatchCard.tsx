@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { savePrediction } from '@/app/actions'
 import { teamFlag, teamShort } from '@/lib/teams'
 import { stadiumOf } from '@/lib/stadiums'
@@ -174,44 +174,59 @@ function Stepper({ val, set, disabled, label }: { val: number; set: (v: number) 
   )
 }
 
-// Selector de goleadores (lista desplegable por selección) — desde semifinales.
+// Un desplegable por cada gol, debajo de cada selección — desde semifinales.
+// El nº de casillas = goles de ese equipo en el marcador. Un jugador se puede
+// repetir (varios goles). Es obligatorio llenarlas todas para guardar.
+function TeamScorers({ team, roster, sel, setSel, disabled }: {
+  team: string; roster: string[]; sel: string[]; setSel: (v: string[]) => void; disabled: boolean
+}) {
+  return (
+    <div className="sc-col">
+      <div className="sc-team">{teamFlag(team)} {teamShort(team)}</div>
+      {sel.length === 0 ? (
+        <span className="sc-empty">0 goles</span>
+      ) : (
+        sel.map((v, i) => (
+          <select
+            key={i}
+            className={`sc-select${!v ? ' empty' : ''}`}
+            value={v}
+            disabled={disabled}
+            onChange={(e) => setSel(sel.map((x, j) => (j === i ? e.target.value : x)))}
+          >
+            <option value="">⚽ Gol {i + 1} — elige…</option>
+            {roster.map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        ))
+      )}
+    </div>
+  )
+}
+
 function ScorerPicker({
-  homeTeam, awayTeam, homeRoster, awayRoster, selected, onAdd, onRemove, disabled, bonus,
+  homeTeam, awayTeam, homeRoster, awayRoster, homeSel, awaySel, setHomeSel, setAwaySel, disabled, bonus, complete,
 }: {
   homeTeam: string; awayTeam: string; homeRoster: string[]; awayRoster: string[]
-  selected: string[]; onAdd: (n: string) => void; onRemove: (n: string) => void; disabled: boolean; bonus: number
+  homeSel: string[]; awaySel: string[]; setHomeSel: (v: string[]) => void; setAwaySel: (v: string[]) => void
+  disabled: boolean; bonus: number; complete: boolean
 }) {
-  const avail = (roster: string[]) => roster.filter((n) => !selected.includes(n))
+  const total = homeSel.length + awaySel.length
   return (
     <div className="scorers">
-      <p className="sc-title">⚽ ¿Quién marca? <span>+{bonus} por acierto 🌶️</span></p>
-      {!disabled && selected.length < 8 && (
-        <select
-          className="sc-select"
-          value=""
-          onChange={(e) => { onAdd(e.target.value); e.currentTarget.value = '' }}
-        >
-          <option value="">➕ Agregar goleador…</option>
-          <optgroup label={`${teamFlag(homeTeam)} ${teamShort(homeTeam)}`}>
-            {avail(homeRoster).map((n) => <option key={n} value={n}>{n}</option>)}
-          </optgroup>
-          <optgroup label={`${teamFlag(awayTeam)} ${teamShort(awayTeam)}`}>
-            {avail(awayRoster).map((n) => <option key={n} value={n}>{n}</option>)}
-          </optgroup>
-        </select>
+      <p className="sc-title">⚽ ¿Quién marca los goles? <span>+{bonus} por acierto 🌶️</span></p>
+      {total === 0 ? (
+        <p className="sc-empty">Pon un marcador con goles y elige quién los mete 👆</p>
+      ) : (
+        <>
+          <div className="sc-grid">
+            <TeamScorers team={homeTeam} roster={homeRoster} sel={homeSel} setSel={setHomeSel} disabled={disabled} />
+            <TeamScorers team={awayTeam} roster={awayRoster} sel={awaySel} setSel={setAwaySel} disabled={disabled} />
+          </div>
+          {!disabled && !complete && (
+            <p className="sc-warn">⚠️ Obligatorio: elige los {total} goleador(es) — deben cuadrar con el marcador.</p>
+          )}
+        </>
       )}
-      <div className="sc-chips">
-        {selected.length === 0 && <span className="sc-empty">Sin goleadores (opcional, pero suma 🤑)</span>}
-        {selected.map((n) => {
-          const team = homeRoster.includes(n) ? homeTeam : awayTeam
-          return (
-            <span key={n} className="sc-chip">
-              {teamFlag(team)} {n}
-              {!disabled && <button type="button" aria-label={`Quitar ${n}`} onClick={() => onRemove(n)}>✕</button>}
-            </span>
-          )
-        })}
-      </div>
     </div>
   )
 }
@@ -222,22 +237,40 @@ export default function MatchCard(p: Props) {
   )
   const [home, setHome] = useState(saved?.home ?? 0)
   const [away, setAway] = useState(saved?.away ?? 0)
-  const [scorers, setScorers] = useState<string[]>(p.initialScorers ?? [])
-  const [editing, setEditing] = useState(saved == null)
-  const [error, setError] = useState('')
-  const [pending, startTransition] = useTransition()
 
   const esColombia = p.home === 'Colombia' || p.away === 'Colombia'
   // El picante de goleadores: desde semifinales y solo si ya se conocen los dos equipos.
   const goleadoresOn = p.round >= 7 && p.homeRoster.length > 0 && p.awayRoster.length > 0
-  const sameScorers = JSON.stringify([...(p.initialScorers ?? [])].sort()) === JSON.stringify([...scorers].sort())
-  const dirty = !saved || saved.home !== home || saved.away !== away || !sameScorers
 
-  function addScorer(nm: string) {
-    if (!nm || scorers.includes(nm) || scorers.length >= 8) return
-    setScorers([...scorers, nm]); setError('')
+  // Goleadores separados por equipo (permiten repetidos = varios goles).
+  const splitInit = () => {
+    const hs: string[] = [], as: string[] = []
+    for (const n of p.initialScorers ?? []) {
+      if (p.homeRoster.includes(n)) hs.push(n)
+      else if (p.awayRoster.includes(n)) as.push(n)
+    }
+    return { hs, as }
   }
-  function removeScorer(nm: string) { setScorers(scorers.filter((s) => s !== nm)); setError('') }
+  const [homeSel, setHomeSel] = useState<string[]>(() => splitInit().hs)
+  const [awaySel, setAwaySel] = useState<string[]>(() => splitInit().as)
+
+  // El nº de casillas de goleadores sigue al marcador.
+  const resize = (arr: string[], n: number) => Array.from({ length: n }, (_, i) => arr[i] ?? '')
+  useEffect(() => { if (goleadoresOn) setHomeSel((prev) => (prev.length === home ? prev : resize(prev, home))) }, [home, goleadoresOn])
+  useEffect(() => { if (goleadoresOn) setAwaySel((prev) => (prev.length === away ? prev : resize(prev, away))) }, [away, goleadoresOn])
+
+  const totalGoals = home + away
+  const scorersComplete = !goleadoresOn || totalGoals === 0 ||
+    (homeSel.length === home && awaySel.length === away && homeSel.every(Boolean) && awaySel.every(Boolean))
+
+  const [editing, setEditing] = useState(saved == null)
+  const [error, setError] = useState('')
+  const [pending, startTransition] = useTransition()
+
+  const initKey = JSON.stringify([...(p.initialScorers ?? [])].sort())
+  const nowScorers = goleadoresOn ? [...homeSel, ...awaySel].filter(Boolean) : []
+  const sameScorers = initKey === JSON.stringify([...nowScorers].sort())
+  const dirty = !saved || saved.home !== home || saved.away !== away || !sameScorers
 
   function onButton() {
     if (p.locked || pending) return
@@ -246,8 +279,12 @@ export default function MatchCard(p: Props) {
       setError('')
       return
     }
+    if (goleadoresOn && !scorersComplete) {
+      setError(`⚠️ Faltan goleadores: elige los ${totalGoals} autores del marcador.`)
+      return
+    }
     startTransition(async () => {
-      const res = await savePrediction(p.matchId, home, away, goleadoresOn ? scorers : [])
+      const res = await savePrediction(p.matchId, home, away, goleadoresOn ? [...homeSel, ...awaySel] : [])
       if (res?.error) {
         setError(res.error)
       } else {
@@ -330,8 +367,8 @@ export default function MatchCard(p: Props) {
         <ScorerPicker
           homeTeam={p.home} awayTeam={p.away}
           homeRoster={p.homeRoster} awayRoster={p.awayRoster}
-          selected={scorers} onAdd={addScorer} onRemove={removeScorer}
-          disabled={p.locked || !editing} bonus={p.scorerBonus}
+          homeSel={homeSel} awaySel={awaySel} setHomeSel={setHomeSel} setAwaySel={setAwaySel}
+          disabled={p.locked || !editing} bonus={p.scorerBonus} complete={scorersComplete}
         />
       )}
       <div className="mfoot">
@@ -342,8 +379,8 @@ export default function MatchCard(p: Props) {
           </div>
         ) : (
           <>
-            <button className={`savebtn ${!editing ? 'saved' : ''}`} disabled={pending || (editing && !dirty && !!saved)} onClick={onButton}>
-              {pending ? 'Guardando…' : !editing ? '✓ Guardado · editar ✏️' : 'Guardar pronóstico 💾'}
+            <button className={`savebtn ${!editing ? 'saved' : ''}`} disabled={pending || (editing && !dirty && !!saved) || (editing && !scorersComplete)} onClick={onButton}>
+              {pending ? 'Guardando…' : !editing ? '✓ Guardado · editar ✏️' : !scorersComplete ? `Faltan ${totalGoals} goleadores ⚽` : 'Guardar pronóstico 💾'}
             </button>
             {!editing && saved && (
               <div className="savedline">¡Quedó! {teamShort(p.home)} {saved.home}–{saved.away} {teamShort(p.away)} 🔒 al pitazo</div>

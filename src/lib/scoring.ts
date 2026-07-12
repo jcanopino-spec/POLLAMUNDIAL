@@ -34,7 +34,8 @@ function normName(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
 }
 
-// +scorer_bonus por cada goleador REAL (distinto) que el jugador haya pronosticado.
+// +scorer_bonus por cada GOL cuyo autor haya sido pronosticado. Cuenta multiplicidad:
+// si un jugador marca 2 y lo pusiste 2 veces, son 2 aciertos (tope: los goles reales del jugador).
 export function scorerBonus(
   predScorers: string[] | null | undefined,
   actualGoals: { name: string }[] | null | undefined,
@@ -42,10 +43,12 @@ export function scorerBonus(
 ): number {
   const bonus = s.scorer_bonus ?? 0
   if (!bonus || !predScorers?.length || !actualGoals?.length) return 0
-  const pred = new Set(predScorers.map(normName).filter(Boolean))
-  const real = new Set(actualGoals.map((g) => normName(g.name)).filter(Boolean))
+  const realCount = new Map<string, number>()
+  for (const g of actualGoals) { const k = normName(g.name); if (k) realCount.set(k, (realCount.get(k) ?? 0) + 1) }
+  const predCount = new Map<string, number>()
+  for (const n of predScorers) { const k = normName(n); if (k) predCount.set(k, (predCount.get(k) ?? 0) + 1) }
   let hits = 0
-  for (const r of real) if (pred.has(r)) hits++
+  for (const [k, pc] of predCount) hits += Math.min(pc, realCount.get(k) ?? 0)
   return hits * bonus
 }
 

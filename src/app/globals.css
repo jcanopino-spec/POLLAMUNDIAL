@@ -386,3 +386,10 @@ body {
 .sc-chip button { font-size: 11px; font-weight: 900; color: var(--red-d); line-height: 1; cursor: pointer; padding: 0 1px; }
 .sc-chip.ok { background: #E3F4E9; color: var(--green); }
 .sc-chip.no { background: var(--cream-2); color: var(--muted); }
+
+/* Goleadores v2: una columna por equipo, un desplegable por gol */
+.sc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sc-col { display: flex; flex-direction: column; gap: 6px; }
+.sc-team { font-size: 11px; font-weight: 800; color: var(--ink); text-align: center; padding-bottom: 2px; border-bottom: 2px solid var(--cream-2); }
+.sc-select.empty { border-color: var(--red); background: #FCE0DC; }
+.sc-warn { font-size: 11px; font-weight: 800; color: var(--red-d); margin-top: 7px; text-align: center; }

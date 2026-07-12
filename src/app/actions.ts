@@ -15,15 +15,26 @@ export async function savePrediction(matchId: number, home: number, away: number
   }
 
   const db = adminDb()
-  const { data: match } = await db.from('matches').select('kickoff_utc, home_team, away_team').eq('id', matchId).single()
+  const { data: match } = await db.from('matches').select('kickoff_utc, home_team, away_team, round').eq('id', matchId).single()
   if (!match) return { error: 'Partido no encontrado.' }
   if (new Date(match.kickoff_utc).getTime() <= Date.now()) {
     return { error: '⛔ Ya pitó el árbitro: pronóstico cerrado. Ni llorando ni con tutela 😅' }
   }
 
-  // Solo se guardan goleadores de las plantillas de los dos equipos (máx. 8).
-  const valid = new Set([...rosterFor(match.home_team), ...rosterFor(match.away_team)])
-  const cleanScorers = [...new Set((scorers ?? []).filter((s) => valid.has(s)))].slice(0, 8)
+  // Desde semifinales: los goleadores deben cuadrar con el marcador, por equipo
+  // (un jugador puede repetirse = varios goles). Obligatorio si hay goles.
+  let cleanScorers: string[] = []
+  const homeRoster = rosterFor(match.home_team)
+  const awayRoster = rosterFor(match.away_team)
+  if (match.round >= 7 && homeRoster.length && awayRoster.length) {
+    const hs = new Set(homeRoster), as = new Set(awayRoster)
+    const homeGoals = (scorers ?? []).filter((s) => hs.has(s))
+    const awayGoals = (scorers ?? []).filter((s) => as.has(s))
+    if (home + away > 0 && (homeGoals.length !== home || awayGoals.length !== away)) {
+      return { error: '⚠️ Elige un goleador por cada gol del marcador (pueden repetirse).' }
+    }
+    cleanScorers = [...homeGoals, ...awayGoals]
+  }
 
   const { error } = await db.from('predictions').upsert({
     participant_id: session.id,

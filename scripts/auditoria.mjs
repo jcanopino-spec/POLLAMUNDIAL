@@ -55,10 +55,11 @@ async function main() {
   function scorerBonus(p, m) {
     const b = s.scorer_bonus ?? 0
     if (m.round < 7 || !b || !p.pred_scorers?.length || !m.goals?.length) return 0
-    const pred = new Set(p.pred_scorers.map(norm))
-    const real = new Set(m.goals.map((g) => norm(g.name)))
+    const real = new Map(), pred = new Map()
+    for (const g of m.goals) { const k = norm(g.name); real.set(k, (real.get(k) ?? 0) + 1) }
+    for (const n of p.pred_scorers) { const k = norm(n); pred.set(k, (pred.get(k) ?? 0) + 1) }
     let hits = 0
-    for (const r of real) if (pred.has(r)) hits++
+    for (const [k, pc] of pred) hits += Math.min(pc, real.get(k) ?? 0)
     return hits * b
   }
   function pointsFor(p, m) {
