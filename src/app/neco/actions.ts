@@ -8,8 +8,8 @@ import { GOAL_PHASES, NECO_EXCLUDED_HOUSE, NECO_MATCH_IDS, type GoalPhase } from
 
 export type NecoInput = {
   matchId: number
-  winner: string
-  winnerGoals: number
+  homeScore: number
+  awayScore: number
   scorers: string[]
   cornersTotal: number | null
   goalPhase: GoalPhase | null
@@ -43,15 +43,22 @@ export async function saveNecoPrediction(input: NecoInput) {
     return { error: '⛔ Ya pitó el árbitro: el NECO de este partido está cerrado.' }
   }
 
-  // Validaciones
-  if (input.winner !== match.home_team && input.winner !== match.away_team) {
-    return { error: 'Elige el equipo ganador.' }
+  // Marcador
+  const home = input.homeScore, away = input.awayScore
+  if (![home, away].every((n) => Number.isInteger(n) && n >= 0 && n <= 20)) {
+    return { error: 'Marcador inválido.' }
   }
-  if (!Number.isInteger(input.winnerGoals) || input.winnerGoals < 0 || input.winnerGoals > 20) {
-    return { error: 'Nº de goles del ganador inválido.' }
+
+  // Goleadores: OBLIGATORIO uno por cada gol del marcador, por equipo (como en la app).
+  const homeRoster = new Set(rosterFor(match.home_team))
+  const awayRoster = new Set(rosterFor(match.away_team))
+  const homeGoals = (input.scorers ?? []).filter((s) => homeRoster.has(s))
+  const awayGoals = (input.scorers ?? []).filter((s) => awayRoster.has(s))
+  if (home + away > 0 && (homeGoals.length !== home || awayGoals.length !== away)) {
+    return { error: '⚠️ Elige un goleador por cada gol del marcador (debajo de cada equipo).' }
   }
-  const roster = new Set([...rosterFor(match.home_team), ...rosterFor(match.away_team)])
-  const cleanScorers = (input.scorers ?? []).filter((s) => roster.has(s))
+  const cleanScorers = [...homeGoals, ...awayGoals]
+
   const corners =
     input.cornersTotal == null || Number.isNaN(input.cornersTotal)
       ? null
@@ -61,8 +68,8 @@ export async function saveNecoPrediction(input: NecoInput) {
   const { error } = await db.from('neco_predictions').upsert({
     house_number: house,
     match_id: input.matchId,
-    winner: input.winner,
-    winner_goals: input.winnerGoals,
+    home_score: home,
+    away_score: away,
     scorers: cleanScorers,
     corners_total: corners,
     goal_phase: phase,

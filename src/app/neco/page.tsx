@@ -37,7 +37,8 @@ export default async function NecoPage() {
     ])
 
   const notInitialized = !!predsRes.error // tabla aún no creada (migración sin aplicar)
-  const scoring = (scoringRow?.value as NecoScoring) ?? DEFAULT_NECO_SCORING
+  // Resiliente: si a la config de la BD le falta alguna clave (p.ej. 'exact'), cae al valor por defecto.
+  const scoring = { ...DEFAULT_NECO_SCORING, ...((scoringRow?.value as Partial<NecoScoring>) ?? {}) }
   const actualCorners = (actualRow?.value ?? {}) as Record<string, { corners?: number }>
   const preds = (predsRes.data ?? []) as NecoPrediction[]
   const matches = (matchesRaw ?? []) as Match[]
@@ -75,16 +76,26 @@ export default async function NecoPage() {
       <div className="shell-content fade">
         <div className="appbar">
           <div>
-            <div className="kicker" style={{ color: 'var(--green)' }}>🎪 evento especial · por casa</div>
-            <h2 className="display">NECO</h2>
+            <div className="kicker" style={{ color: 'var(--green)' }}>🌴 evento especial · Necoclí, Antioquia</div>
+            <h2 className="display">NECO 🏖️</h2>
           </div>
           <span className="pill" style={{ background: 'var(--yellow)' }}>2 partidos finales</span>
         </div>
 
-        <p className="px-[18px] text-[12px] font-bold" style={{ color: 'var(--muted)' }}>
-          El <b>NECO</b> es un evento aparte de la app: los puntos se manejan <b>por casa</b> (no por jugador) y se
-          <b> acumulan</b> en los 2 partidos finales. Cualquier integrante de la casa puede llenar o editar el pronóstico
-          con su clave, y <b>cierra al pitazo</b>. 🏠 La <b>Casa {NECO_EXCLUDED_HOUSE}</b> (invitados) puede mirar pero no participa.
+        {/* Presentación con humor desde la cabaña de la Casa 106 */}
+        <div className="mx-[14px] mt-1 rounded-2xl p-3" style={{ border: '3px solid var(--ink)', background: 'linear-gradient(100deg,#fff6df,#ffe9c2)' }}>
+          <p className="text-[13px] font-bold leading-5" style={{ color: 'var(--ink)' }}>
+            🌴 Bienvenidos al <b>NECO</b> —sí, por <b>Necoclí</b> 🏖️— <b>desde la cabaña de Oscarito y Doña Flavia</b> (la
+            gloriosa <b>Casa 106</b>), donde viviremos los <b>dos últimos partidos del Mundial</b> con arena entre los dedos,
+            cerveza bien fría 🍻 y pantalla gigante 📺. Aquí <b>cerramos el Mundial con broche de oro</b> 🏆… y de paso le
+            metemos <b>más billete a la natillera</b> 💰. Que gane la mejor casa —la 106 promete ser buena anfitriona
+            pero <b>pésima rival</b> 😏🐷—.
+          </p>
+        </div>
+
+        <p className="px-[18px] mt-3 text-[12px] font-bold" style={{ color: 'var(--muted)' }}>
+          Los puntos van <b>por casa</b> (no por jugador) y se <b>acumulan</b> en los 2 partidos. Cualquier integrante llena
+          o edita el pronóstico con su clave, y <b>cierra al pitazo</b>. 🏠 La <b>Casa {NECO_EXCLUDED_HOUSE}</b> (invitados) mira pero no juega.
         </p>
 
         {notInitialized && (
@@ -98,9 +109,10 @@ export default async function NecoPage() {
         <div className="mx-[14px] mt-3 rounded-2xl p-3" style={{ border: '3px solid var(--ink)', background: 'var(--card, #fffdf7)' }}>
           <p className="display text-sm uppercase mb-1">🎯 Cómo suma cada casa (por partido)</p>
           <ul className="text-[12px] font-bold leading-6" style={{ color: 'var(--ink)' }}>
-            <li>🏆 Acertar el ganador — <b>+{scoring.winner}</b></li>
+            <li>🎯 Acertar el <b>marcador EXACTO</b> — <b>+{scoring.exact}</b></li>
+            <li>🏆 Acertar el ganador (aparte del exacto) — <b>+{scoring.winner}</b></li>
             <li>🔢 Acertar el nº de goles del ganador — <b>+{scoring.winner_goals}</b></li>
-            <li>⚽ Cada autor de gol acertado — <b>+{scoring.scorer}</b></li>
+            <li>⚽ Cada autor de gol acertado (así sea del perdedor) — <b>+{scoring.scorer}</b></li>
             <li>🚩 Acertar los tiros de esquina totales — <b>+{scoring.corners}</b></li>
             <li>⏱️ Acertar la etapa de los goles — <b>+{scoring.goal_phase}</b></li>
             <li>🥅 Predecir tanda de penaltis (si la hay) — <b>+{scoring.penalties}</b></li>
@@ -139,7 +151,7 @@ export default async function NecoPage() {
               {/* Pronóstico actual de mi casa */}
               {mine && (
                 <div className="rounded-xl p-2 mb-2 text-[12px] font-bold" style={{ background: '#f0ece0' }}>
-                  🏠 <b>Casa {myHouse}</b> ya pronosticó: ganador <b>{mine.winner ? teamShort(mine.winner) : '—'}</b> con <b>{mine.winner_goals ?? '—'}</b> gol(es)
+                  🏠 <b>Casa {myHouse}</b> ya pronosticó: <b>{teamShort(m.home_team)} {mine.home_score ?? '—'}–{mine.away_score ?? '—'} {teamShort(m.away_team)}</b>
                   {mine.scorers?.length ? <> · goleadores: {mine.scorers.join(', ')}</> : null}
                   {mine.corners_total != null ? <> · córners {mine.corners_total}</> : null}
                   {mine.goal_phase ? <> · {PHASE_LABEL[mine.goal_phase as GoalPhase]}</> : null}
@@ -156,7 +168,7 @@ export default async function NecoPage() {
                   awayRoster={rosterFor(m.away_team)}
                   scoring={scoring}
                   initial={mine ? {
-                    winner: mine.winner, winnerGoals: mine.winner_goals, scorers: mine.scorers ?? [],
+                    homeScore: mine.home_score, awayScore: mine.away_score, scorers: mine.scorers ?? [],
                     cornersTotal: mine.corners_total, goalPhase: mine.goal_phase as GoalPhase | null, penalties: mine.penalties,
                   } : null}
                 />

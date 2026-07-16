@@ -1,12 +1,13 @@
 // Motor de puntos del evento NECO (por casa, aparte de la app general).
-// Reglas: ganador 10 · nº goles del ganador 5 · cada goleador 5 ·
-// córners totales 5 · etapa del gol 5 · penaltis 3.
+// Reglas: marcador EXACTO 20 · ganador 10 · nº goles del ganador 5 ·
+// cada goleador 5 (así sea del perdedor) · córners totales 5 · etapa del gol 5 · penaltis 3.
 import type { Match } from './db'
 
 export const NECO_MATCH_IDS = [103, 104] as const // 🥉 tercer puesto y 🏆 final
 export const NECO_EXCLUDED_HOUSE = '2026'          // casa simbólica de invitados (no participa)
 
 export type NecoScoring = {
+  exact: number
   winner: number
   winner_goals: number
   scorer: number
@@ -16,7 +17,7 @@ export type NecoScoring = {
 }
 
 export const DEFAULT_NECO_SCORING: NecoScoring = {
-  winner: 10, winner_goals: 5, scorer: 5, corners: 5, goal_phase: 5, penalties: 3,
+  exact: 20, winner: 10, winner_goals: 5, scorer: 5, corners: 5, goal_phase: 5, penalties: 3,
 }
 
 export type GoalPhase = '1T' | '2T' | 'ET1' | 'ET2'
@@ -31,8 +32,8 @@ export const PHASE_LABEL: Record<GoalPhase, string> = {
 export type NecoPrediction = {
   house_number: string
   match_id: number
-  winner: string | null
-  winner_goals: number | null
+  home_score: number | null
+  away_score: number | null
   scorers: string[]
   corners_total: number | null
   goal_phase: GoalPhase | null
@@ -75,6 +76,7 @@ export function hadPenalties(
 }
 
 export type NecoBreakdown = {
+  exact: number
   winner: number
   winner_goals: number
   scorer: number
@@ -85,7 +87,7 @@ export type NecoBreakdown = {
 }
 
 export const emptyBreakdown = (): NecoBreakdown => ({
-  winner: 0, winner_goals: 0, scorer: 0, corners: 0, goal_phase: 0, penalties: 0, total: 0,
+  exact: 0, winner: 0, winner_goals: 0, scorer: 0, corners: 0, goal_phase: 0, penalties: 0, total: 0,
 })
 
 // Califica una predicción de casa contra el resultado real de un partido.
@@ -100,13 +102,23 @@ export function scoreNeco(
   const b = emptyBreakdown()
   if (m.status !== 'finished' || m.home_score == null || m.away_score == null) return b
 
-  const realWinnerGoals = Math.max(m.home_score, m.away_score)
+  const ph = pred.home_score, pa = pred.away_score
+  if (ph != null && pa != null) {
+    // 🎯 Marcador EXACTO (independiente del ganador)
+    if (ph === m.home_score && pa === m.away_score) b.exact = s.exact
+    // 🏆 Ganador (o empate en los 90'+prórroga)
+    const predWinner = ph > pa ? m.home_team : pa > ph ? m.away_team : null
+    if (predWinner && m.winner && predWinner === m.winner) b.winner = s.winner
+    // 🔢 Nº de goles del equipo ganador (lado real del ganador)
+    const side = m.winner === m.home_team ? 'home' : m.winner === m.away_team ? 'away' : null
+    if (side) {
+      const realWG = side === 'home' ? m.home_score : m.away_score
+      const predWG = side === 'home' ? ph : pa
+      if (predWG === realWG) b.winner_goals = s.winner_goals
+    }
+  }
 
-  // 🏆 Ganador
-  if (pred.winner && m.winner && pred.winner === m.winner) b.winner = s.winner
-  // 🔢 Nº de goles del equipo ganador
-  if (pred.winner_goals != null && pred.winner_goals === realWinnerGoals) b.winner_goals = s.winner_goals
-  // ⚽ Goleadores (multiplicidad, tope = goles reales de cada jugador)
+  // ⚽ Goleadores (multiplicidad, tope = goles reales de cada jugador; cuenta el del perdedor)
   const real = new Map<string, number>()
   for (const g of m.goals ?? []) { const k = normName(g.name); if (k) real.set(k, (real.get(k) ?? 0) + 1) }
   const got = new Map<string, number>()
@@ -114,6 +126,7 @@ export function scoreNeco(
   let hits = 0
   for (const [k, c] of got) hits += Math.min(c, real.get(k) ?? 0)
   b.scorer = hits * s.scorer
+
   // 🚩 Córners totales
   if (actualCorners != null && pred.corners_total != null && pred.corners_total === actualCorners) b.corners = s.corners
   // ⏱️ Etapa de los goles
@@ -122,6 +135,6 @@ export function scoreNeco(
   // 🥅 Penaltis
   if (pred.penalties && hadPenalties(m)) b.penalties = s.penalties
 
-  b.total = b.winner + b.winner_goals + b.scorer + b.corners + b.goal_phase + b.penalties
+  b.total = b.exact + b.winner + b.winner_goals + b.scorer + b.corners + b.goal_phase + b.penalties
   return b
 }
