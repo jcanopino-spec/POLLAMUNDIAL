@@ -1,6 +1,9 @@
 // Motor de puntos del evento NECO (por casa, aparte de la app general).
 // Reglas: marcador EXACTO 20 · ganador 10 · nº goles del ganador 5 ·
-// cada goleador 5 (así sea del perdedor) · córners totales 5 · etapa del gol 5 · penaltis 3.
+// cada goleador 5 (así sea del perdedor) · córners totales 5 ·
+// etapa de CADA gol 5 · penaltis 3.
+// Autores y etapas se califican por SEPARADO (multiset): el tiempo en que
+// cae un gol no tiene que coincidir con el autor que le asignaste.
 import type { Match } from './db'
 
 export const NECO_MATCH_IDS = [103, 104] as const // 🥉 tercer puesto y 🏆 final
@@ -28,6 +31,9 @@ export const PHASE_LABEL: Record<GoalPhase, string> = {
   'ET1': 'Alargue · 1er tiempo',
   'ET2': 'Alargue · 2do tiempo',
 }
+export const PHASE_SHORT: Record<GoalPhase, string> = {
+  '1T': '1er T', '2T': '2do T', 'ET1': 'Alargue 1', 'ET2': 'Alargue 2',
+}
 
 export type NecoPrediction = {
   house_number: string
@@ -36,7 +42,7 @@ export type NecoPrediction = {
   away_score: number | null
   scorers: string[]
   corners_total: number | null
-  goal_phase: GoalPhase | null
+  goal_phases: GoalPhase[] // una etapa por gol (multiset; no atada al autor)
   penalties: boolean
 }
 
@@ -55,13 +61,14 @@ export function phaseFromMinute(min: string | number | null | undefined): GoalPh
   return 'ET2'
 }
 
-// Etapa real del PRIMER gol del partido (regla base; fácil de ajustar a "etapa con más goles").
-export function actualGoalPhase(m: Pick<Match, 'goals'>): GoalPhase | null {
-  const mins = (m.goals ?? [])
-    .map((g) => parseInt(String(g?.min ?? ''), 10))
-    .filter((n) => Number.isFinite(n))
-  if (!mins.length) return null
-  return phaseFromMinute(Math.min(...mins))
+// Etapa real de CADA gol del partido (una por gol, en orden de minuto).
+export function actualGoalPhases(m: Pick<Match, 'goals'>): GoalPhase[] {
+  const out: GoalPhase[] = []
+  for (const g of m.goals ?? []) {
+    const p = phaseFromMinute(g?.min)
+    if (p) out.push(p)
+  }
+  return out
 }
 
 // ¿Hubo tanda de penaltis? Empate tras prórroga con ganador definido.
@@ -90,6 +97,17 @@ export const emptyBreakdown = (): NecoBreakdown => ({
   exact: 0, winner: 0, winner_goals: 0, scorer: 0, corners: 0, goal_phase: 0, penalties: 0, total: 0,
 })
 
+// multiset: cuántos de `pred` caen dentro de `real` (con tope por multiplicidad).
+function multisetHits(pred: string[] | null | undefined, real: string[]): number {
+  const realCount = new Map<string, number>()
+  for (const r of real) { const k = normName(r); if (k) realCount.set(k, (realCount.get(k) ?? 0) + 1) }
+  const predCount = new Map<string, number>()
+  for (const p of pred ?? []) { const k = normName(p); if (k) predCount.set(k, (predCount.get(k) ?? 0) + 1) }
+  let hits = 0
+  for (const [k, c] of predCount) hits += Math.min(c, realCount.get(k) ?? 0)
+  return hits
+}
+
 // Califica una predicción de casa contra el resultado real de un partido.
 // `actualCorners` viene de settings 'neco_actual' (lo carga el admin); si es null,
 // el ítem de córners no puntúa todavía.
@@ -106,7 +124,7 @@ export function scoreNeco(
   if (ph != null && pa != null) {
     // 🎯 Marcador EXACTO (independiente del ganador)
     if (ph === m.home_score && pa === m.away_score) b.exact = s.exact
-    // 🏆 Ganador (o empate en los 90'+prórroga)
+    // 🏆 Ganador
     const predWinner = ph > pa ? m.home_team : pa > ph ? m.away_team : null
     if (predWinner && m.winner && predWinner === m.winner) b.winner = s.winner
     // 🔢 Nº de goles del equipo ganador (lado real del ganador)
@@ -118,20 +136,16 @@ export function scoreNeco(
     }
   }
 
-  // ⚽ Goleadores (multiplicidad, tope = goles reales de cada jugador; cuenta el del perdedor)
-  const real = new Map<string, number>()
-  for (const g of m.goals ?? []) { const k = normName(g.name); if (k) real.set(k, (real.get(k) ?? 0) + 1) }
-  const got = new Map<string, number>()
-  for (const n of pred.scorers ?? []) { const k = normName(n); if (k) got.set(k, (got.get(k) ?? 0) + 1) }
-  let hits = 0
-  for (const [k, c] of got) hits += Math.min(c, real.get(k) ?? 0)
-  b.scorer = hits * s.scorer
+  // ⚽ Goleadores (multiset; cuenta el del perdedor, sin importar el tiempo)
+  const realScorers = (m.goals ?? []).map((g) => g.name)
+  b.scorer = multisetHits(pred.scorers, realScorers) * s.scorer
+
+  // ⏱️ Etapas de los goles (multiset; +5 por cada etapa acertada, aparte del autor)
+  const realPhases = actualGoalPhases(m)
+  b.goal_phase = multisetHits(pred.goal_phases, realPhases) * s.goal_phase
 
   // 🚩 Córners totales
   if (actualCorners != null && pred.corners_total != null && pred.corners_total === actualCorners) b.corners = s.corners
-  // ⏱️ Etapa de los goles
-  const realPhase = actualGoalPhase(m)
-  if (pred.goal_phase && realPhase && pred.goal_phase === realPhase) b.goal_phase = s.goal_phase
   // 🥅 Penaltis
   if (pred.penalties && hadPenalties(m)) b.penalties = s.penalties
 

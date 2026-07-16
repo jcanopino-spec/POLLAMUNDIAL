@@ -8,7 +8,7 @@ import { rosterFor } from '@/lib/rosters'
 import { teamFlag, teamShort } from '@/lib/teams'
 import {
   DEFAULT_NECO_SCORING, NECO_EXCLUDED_HOUSE, NECO_MATCH_IDS,
-  PHASE_LABEL, scoreNeco, type GoalPhase, type NecoPrediction, type NecoScoring,
+  PHASE_SHORT, scoreNeco, type GoalPhase, type NecoPrediction, type NecoScoring,
 } from '@/lib/neco'
 
 export const dynamic = 'force-dynamic'
@@ -114,7 +114,7 @@ export default async function NecoPage() {
             <li>🔢 Acertar el nº de goles del ganador — <b>+{scoring.winner_goals}</b></li>
             <li>⚽ Cada autor de gol acertado (así sea del perdedor) — <b>+{scoring.scorer}</b></li>
             <li>🚩 Acertar los tiros de esquina totales — <b>+{scoring.corners}</b></li>
-            <li>⏱️ Acertar la etapa de los goles — <b>+{scoring.goal_phase}</b></li>
+            <li>⏱️ Acertar la etapa (tiempo) de <b>cada gol</b> — <b>+{scoring.goal_phase}</b> c/u (se revisa aparte del autor)</li>
             <li>🥅 Predecir tanda de penaltis (si la hay) — <b>+{scoring.penalties}</b></li>
           </ul>
         </div>
@@ -154,7 +154,7 @@ export default async function NecoPage() {
                   🏠 <b>Casa {myHouse}</b> ya pronosticó: <b>{teamShort(m.home_team)} {mine.home_score ?? '—'}–{mine.away_score ?? '—'} {teamShort(m.away_team)}</b>
                   {mine.scorers?.length ? <> · goleadores: {mine.scorers.join(', ')}</> : null}
                   {mine.corners_total != null ? <> · córners {mine.corners_total}</> : null}
-                  {mine.goal_phase ? <> · {PHASE_LABEL[mine.goal_phase as GoalPhase]}</> : null}
+                  {mine.goal_phases?.length ? <> · tiempos: {mine.goal_phases.map((p) => PHASE_SHORT[p as GoalPhase]).join(', ')}</> : null}
                   {mine.penalties ? <> · 🥅 con penaltis</> : null}
                 </div>
               )}
@@ -169,7 +169,7 @@ export default async function NecoPage() {
                   scoring={scoring}
                   initial={mine ? {
                     homeScore: mine.home_score, awayScore: mine.away_score, scorers: mine.scorers ?? [],
-                    cornersTotal: mine.corners_total, goalPhase: mine.goal_phase as GoalPhase | null, penalties: mine.penalties,
+                    goalPhases: (mine.goal_phases ?? []) as GoalPhase[], cornersTotal: mine.corners_total, penalties: mine.penalties,
                   } : null}
                 />
               ) : (

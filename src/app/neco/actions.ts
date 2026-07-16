@@ -11,8 +11,8 @@ export type NecoInput = {
   homeScore: number
   awayScore: number
   scorers: string[]
+  goalPhases: string[]
   cornersTotal: number | null
-  goalPhase: GoalPhase | null
   penalties: boolean
 }
 
@@ -48,22 +48,29 @@ export async function saveNecoPrediction(input: NecoInput) {
   if (![home, away].every((n) => Number.isInteger(n) && n >= 0 && n <= 20)) {
     return { error: 'Marcador inválido.' }
   }
+  const totalGoals = home + away
 
-  // Goleadores: OBLIGATORIO uno por cada gol del marcador, por equipo (como en la app).
+  // Goleadores: OBLIGATORIO uno por cada gol del marcador, por equipo (nada en blanco).
   const homeRoster = new Set(rosterFor(match.home_team))
   const awayRoster = new Set(rosterFor(match.away_team))
   const homeGoals = (input.scorers ?? []).filter((s) => homeRoster.has(s))
   const awayGoals = (input.scorers ?? []).filter((s) => awayRoster.has(s))
-  if (home + away > 0 && (homeGoals.length !== home || awayGoals.length !== away)) {
-    return { error: '⚠️ Elige un goleador por cada gol del marcador (debajo de cada equipo).' }
+  if (totalGoals > 0 && (homeGoals.length !== home || awayGoals.length !== away)) {
+    return { error: '⚠️ Falta el autor de algún gol: pon un goleador por cada gol del marcador.' }
   }
   const cleanScorers = [...homeGoals, ...awayGoals]
+
+  // Etapas: OBLIGATORIO asignar la etapa (tiempo) de cada gol.
+  const GP = new Set<GoalPhase>(GOAL_PHASES)
+  const phases = (input.goalPhases ?? []).filter((p): p is GoalPhase => GP.has(p as GoalPhase))
+  if (totalGoals > 0 && phases.length !== totalGoals) {
+    return { error: '⚠️ Falta la etapa de algún gol: asigna el tiempo (1er/2do/alargue) de cada gol.' }
+  }
 
   const corners =
     input.cornersTotal == null || Number.isNaN(input.cornersTotal)
       ? null
       : Math.max(0, Math.min(50, Math.trunc(input.cornersTotal)))
-  const phase = input.goalPhase && GOAL_PHASES.includes(input.goalPhase) ? input.goalPhase : null
 
   const { error } = await db.from('neco_predictions').upsert({
     house_number: house,
@@ -71,8 +78,8 @@ export async function saveNecoPrediction(input: NecoInput) {
     home_score: home,
     away_score: away,
     scorers: cleanScorers,
+    goal_phases: phases,
     corners_total: corners,
-    goal_phase: phase,
     penalties: !!input.penalties,
     updated_by: session.id,
     updated_at: new Date().toISOString(),
