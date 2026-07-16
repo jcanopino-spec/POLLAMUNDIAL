@@ -166,3 +166,20 @@ export async function runAuditNow() {
     return { error: 'No se pudo correr la auditoría. Intenta de nuevo.' }
   }
 }
+
+// NECO: cargar los tiros de esquina reales de un partido final (la app no los rastrea).
+export async function setNecoCorners(matchId: number, corners: number | null) {
+  const session = await getSession()
+  if (!session?.isAdmin) return { error: 'Solo el admin.' }
+  const db = adminDb()
+  const { data: row } = await db.from('settings').select('value').eq('key', 'neco_actual').maybeSingle()
+  const cur = { ...((row?.value as Record<string, { corners?: number }>) ?? {}) }
+  const val = corners == null || Number.isNaN(corners) ? null : Math.max(0, Math.min(50, Math.trunc(corners)))
+  if (val == null) delete cur[String(matchId)]
+  else cur[String(matchId)] = { ...(cur[String(matchId)] ?? {}), corners: val }
+  const { error } = await db.from('settings').upsert({ key: 'neco_actual', value: cur })
+  if (error) return { error: 'No se pudo guardar. Intenta de nuevo.' }
+  revalidatePath('/neco')
+  revalidatePath('/admin')
+  return { ok: '✅ Córners NECO guardados.' }
+}

@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
-import { AuditAdmin, LiveScoreAdmin, ParticipantsAdmin, PicksReportAdmin, PlantillaAdmin, ProgressAdmin, ResultsAdmin, SyncAdmin, type PicksRow, type ProgressRow } from '@/components/AdminPanel'
+import { AuditAdmin, LiveScoreAdmin, NecoAdmin, ParticipantsAdmin, PicksReportAdmin, PlantillaAdmin, ProgressAdmin, ResultsAdmin, SyncAdmin, type PicksRow, type ProgressRow } from '@/components/AdminPanel'
 import { adminDb, fetchAllPredictions } from '@/lib/db'
 import { getSession } from '@/lib/session'
-import { formatKickoff } from '@/lib/teams'
+import { formatKickoff, teamShort } from '@/lib/teams'
+import { NECO_MATCH_IDS } from '@/lib/neco'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,13 +14,15 @@ export default async function AdminPage() {
   if (!session.isAdmin) redirect('/')
 
   const db = adminDb()
-  const [{ data: participants }, { data: matches }, { data: sync }, { data: allMatches }, allPredsRaw, { data: auditRow }] = await Promise.all([
+  const [{ data: participants }, { data: matches }, { data: sync }, { data: allMatches }, allPredsRaw, { data: auditRow }, { data: necoMs }, { data: necoActualRow }] = await Promise.all([
     db.from('participants').select('id, name, is_admin, champion_team, finalist1, finalist2, must_change_pin, house_number, nickname').order('name'),
     db.from('matches').select('id, home_team, away_team, kickoff_utc, status').lte('kickoff_utc', new Date(Date.now() + 24 * 3600 * 1000).toISOString()).order('kickoff_utc', { ascending: false }),
     db.from('settings').select('value').eq('key', 'last_sync').maybeSingle(),
     db.from('matches').select('id, kickoff_utc'),
     fetchAllPredictions(db, 'participant_id, match_id'),
     db.from('settings').select('value').eq('key', 'last_audit').maybeSingle(),
+    db.from('matches').select('id, home_team, away_team').in('id', NECO_MATCH_IDS as unknown as number[]).order('id'),
+    db.from('settings').select('value').eq('key', 'neco_actual').maybeSingle(),
   ])
   const audit = auditRow?.value as { ok: boolean; ranAt: string; problems: string[] } | undefined
   const auditWhen = audit?.ranAt
@@ -74,6 +77,14 @@ export default async function AdminPage() {
     ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(new Date(sync.value.at))
     : null
 
+  // 🎪 NECO: partidos finales + córners ya cargados (para el panel de resultados)
+  const necoActual = (necoActualRow?.value ?? {}) as Record<string, { corners?: number }>
+  const necoMatches = (necoMs ?? []).map((m) => ({
+    id: m.id,
+    label: `${m.id === 103 ? '🥉 Tercer puesto' : '🏆 Final'}: ${teamShort(m.home_team)} vs ${teamShort(m.away_team)}`,
+    corners: necoActual[String(m.id)]?.corners ?? null,
+  }))
+
   return (
     <div className="shell">
       <div className="shell-content fade">
@@ -106,6 +117,7 @@ export default async function AdminPage() {
             kickoffLabel: formatKickoff(m.kickoff_utc),
           }))}
         />
+        <NecoAdmin matches={necoMatches} />
         <SyncAdmin lastSync={lastSync} />
         <PlantillaAdmin />
         <div className="spacer" />

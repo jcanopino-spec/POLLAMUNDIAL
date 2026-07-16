@@ -9,6 +9,7 @@ import {
   runAuditNow,
   setLiveScore,
   setManualResult,
+  setNecoCorners,
   updateParticipantInfo,
 } from '@/app/admin/actions'
 import { teamFlag, teamShort } from '@/lib/teams'
@@ -443,5 +444,44 @@ export function AuditAdmin({ audit, auditWhen }: { audit: AuditData; auditWhen: 
       {auditWhen && <p className="text-[10px] font-bold mt-1" style={{ color: 'var(--muted)' }}>Última auditoría · {auditWhen}</p>}
       {msg && <p className="text-[11px] font-bold mt-1" style={{ color: 'var(--ink)' }}>{msg}</p>}
     </div>
+  )
+}
+
+// 🎪 NECO · cargar los tiros de esquina reales (lo único que la app no calcula sola).
+export function NecoAdmin({ matches }: { matches: { id: number; label: string; corners: number | null }[] }) {
+  const [vals, setVals] = useState<Record<number, string>>(
+    () => Object.fromEntries(matches.map((m) => [m.id, m.corners != null ? String(m.corners) : '']))
+  )
+  const [busy, startTransition] = useTransition()
+  const [msg, setMsg] = useState('')
+
+  const save = (id: number) =>
+    startTransition(async () => {
+      const raw = (vals[id] ?? '').trim()
+      const res = await setNecoCorners(id, raw === '' ? null : parseInt(raw, 10))
+      setMsg(res?.error ? '⚠️ ' + res.error : (res?.ok ?? '✅ Guardado'))
+    })
+
+  return (
+    <section className="card mx-[18px] mb-4">
+      <p className="display text-lg uppercase">🎪 NECO · resultados</p>
+      <p className="text-xs font-bold mb-3" style={{ color: 'var(--muted)' }}>
+        Carga los <b>tiros de esquina totales</b> de cada partido final. El ganador, goles, goleadores, etapa y penaltis se califican solos con el resultado.
+      </p>
+      {matches.map((m) => (
+        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <span style={{ flex: 1, fontWeight: 800, fontSize: 13 }}>{m.label}</span>
+          <input
+            inputMode="numeric"
+            value={vals[m.id] ?? ''}
+            placeholder="córners"
+            onChange={(e) => setVals((v) => ({ ...v, [m.id]: e.target.value.replace(/\D/g, '').slice(0, 2) }))}
+            style={{ width: 90, padding: '6px 10px', borderRadius: 8, border: '2px solid var(--ink)', fontWeight: 800 }}
+          />
+          <button style={miniBtn} disabled={busy} onClick={() => save(m.id)}>Guardar</button>
+        </div>
+      ))}
+      {msg && <p className="text-[11px] font-bold mt-1" style={{ color: msg.startsWith('⚠️') ? 'var(--red)' : 'var(--green)' }}>{msg}</p>}
+    </section>
   )
 }
